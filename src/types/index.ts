@@ -28,15 +28,13 @@ export interface TripRecord {
 
 export interface FuelPurchaseRecord {
   id: string;
-  driver: Driver; // Kim aldı
-  paidBy: Driver | 'shared'; // Kim ödedi
   date: string;
-  liters: number;
-  pricePerLiter: number;
-  totalAmount: number;
-  odometer: number;
-  station: string;
-  fullTank: boolean;
+  liters: number; // Kaç litre benzin alındı
+  totalAmount: number; // Kaç TL'ye alındı
+  pricePerLiter: number; // Litre fiyatı (TL/L)
+  station?: string; // Benzinlik istasyonu (Shell, Opet vb.)
+  odometer?: number; // Araç kilometresindeki değer (opsiyonel)
+  fullTank?: boolean; // Depo fulllendi mi (opsiyonel)
   notes?: string;
   createdAt: string;
 }
@@ -68,7 +66,6 @@ export interface DriverStats {
   avgCostPerKm: number; // TL/km
   bestConsumption: number; // Lowest L/100km
   highestConsumption: number; // Highest L/100km
-  totalSpentOnRefuel: number; // TL paid at pump
   ecoTripsCount: number;
 }
 
@@ -78,14 +75,6 @@ export interface DuelComparison {
   percentageDifference: number; // percentage savings
   utkuStats: DriverStats;
   gozdeStats: DriverStats;
-  costBalance: {
-    utkuPaidAtPump: number;
-    gozdePaidAtPump: number;
-    utkuConsumedValue: number;
-    gozdeConsumedValue: number;
-    debtor: Driver | 'settled';
-    debtAmount: number;
-  };
 }
 
 export type ThemeMode = 'light' | 'dark' | 'system';

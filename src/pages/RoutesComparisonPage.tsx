@@ -21,8 +21,8 @@ export const RoutesComparisonPage: React.FC<RoutesComparisonPageProps> = ({
   const routeComparisons = calculateRouteComparisons(trips);
   const routeTypeComparisons = calculateRouteTypeComparisons(trips);
 
-  const utkuStats = calculateDriverStats('utku', trips, []);
-  const gozdeStats = calculateDriverStats('gozde', trips, []);
+  const utkuStats = calculateDriverStats('utku', trips);
+  const gozdeStats = calculateDriverStats('gozde', trips);
 
   // Simulator state
   const [simDistance, setSimDistance] = useState<string>('50');

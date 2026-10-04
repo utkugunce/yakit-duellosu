@@ -1,4 +1,4 @@
-import { Driver, TripRecord, FuelPurchaseRecord, DriverStats, DuelComparison, RouteType } from '../types';
+import { Driver, TripRecord, DriverStats, DuelComparison, RouteType } from '../types';
 
 export const DRIVER_CONFIG = {
   utku: {
@@ -28,8 +28,7 @@ export const ROUTE_TYPE_LABELS: Record<RouteType, { label: string; icon: string;
 
 export function calculateDriverStats(
   driver: Driver,
-  trips: TripRecord[],
-  refuels: FuelPurchaseRecord[]
+  trips: TripRecord[]
 ): DriverStats {
   const driverTrips = trips.filter(t => t.driver === driver);
   const totalTrips = driverTrips.length;
@@ -53,16 +52,6 @@ export function calculateDriverStats(
   const avgConsumption = totalDistance > 0 ? (totalFuelConsumed / totalDistance) * 100 : 0;
   const avgCostPerKm = totalDistance > 0 ? totalFuelCost / totalDistance : 0;
 
-  // Refuel calculations
-  let totalSpentOnRefuel = 0;
-  for (const r of refuels) {
-    if (r.paidBy === driver) {
-      totalSpentOnRefuel += r.totalAmount;
-    } else if (r.paidBy === 'shared') {
-      totalSpentOnRefuel += r.totalAmount / 2;
-    }
-  }
-
   return {
     driver,
     name: DRIVER_CONFIG[driver].name,
@@ -76,14 +65,13 @@ export function calculateDriverStats(
     avgCostPerKm: Math.round(avgCostPerKm * 100) / 100,
     bestConsumption: bestConsumption === Infinity ? 0 : bestConsumption,
     highestConsumption,
-    totalSpentOnRefuel: Math.round(totalSpentOnRefuel * 100) / 100,
     ecoTripsCount,
   };
 }
 
-export function calculateDuel(trips: TripRecord[], refuels: FuelPurchaseRecord[]): DuelComparison {
-  const utkuStats = calculateDriverStats('utku', trips, refuels);
-  const gozdeStats = calculateDriverStats('gozde', trips, refuels);
+export function calculateDuel(trips: TripRecord[]): DuelComparison {
+  const utkuStats = calculateDriverStats('utku', trips);
+  const gozdeStats = calculateDriverStats('gozde', trips);
 
   let winner: Driver | 'tie' | null = null;
   let differenceLitersPer100Km = 0;
@@ -111,40 +99,12 @@ export function calculateDuel(trips: TripRecord[], refuels: FuelPurchaseRecord[]
     winner = 'gozde';
   }
 
-  // Cost balance equation:
-  // Fair payment share: each pays for the fuel they actually consumed
-  // Utku's net balance: utkuSpentOnRefuel - utkuFuelCost
-  // If positive, Utku paid more than consumed -> Gözde owes Utku
-  // If negative, Utku consumed more than paid -> Utku owes Gözde
-  const utkuBalance = utkuStats.totalSpentOnRefuel - utkuStats.totalFuelCost;
-  const gozdeBalance = gozdeStats.totalSpentOnRefuel - gozdeStats.totalFuelCost;
-
-  let debtor: Driver | 'settled' = 'settled';
-  let debtAmount = 0;
-
-  // If Utku overpaid (positive balance) and Gözde underpaid (negative balance)
-  if (utkuBalance > 5) {
-    debtor = 'gozde';
-    debtAmount = Math.round(utkuBalance * 100) / 100;
-  } else if (gozdeBalance > 5) {
-    debtor = 'utku';
-    debtAmount = Math.round(gozdeBalance * 100) / 100;
-  }
-
   return {
     winner,
     differenceLitersPer100Km,
     percentageDifference,
     utkuStats,
     gozdeStats,
-    costBalance: {
-      utkuPaidAtPump: utkuStats.totalSpentOnRefuel,
-      gozdePaidAtPump: gozdeStats.totalSpentOnRefuel,
-      utkuConsumedValue: utkuStats.totalFuelCost,
-      gozdeConsumedValue: gozdeStats.totalFuelCost,
-      debtor,
-      debtAmount,
-    }
   };
 }
 
@@ -265,14 +225,14 @@ export interface FunBadge {
   detail: string;
 }
 
-export function calculateFunBadges(trips: TripRecord[], refuels: FuelPurchaseRecord[]): FunBadge[] {
+export function calculateFunBadges(trips: TripRecord[]): FunBadge[] {
   if (trips.length === 0) return [];
 
   const utkuTrips = trips.filter(t => t.driver === 'utku');
   const gozdeTrips = trips.filter(t => t.driver === 'gozde');
 
-  const utkuStats = calculateDriverStats('utku', trips, refuels);
-  const gozdeStats = calculateDriverStats('gozde', trips, refuels);
+  const utkuStats = calculateDriverStats('utku', trips);
+  const gozdeStats = calculateDriverStats('gozde', trips);
 
   const badges: FunBadge[] = [];
 
@@ -354,23 +314,23 @@ export function calculateFunBadges(trips: TripRecord[], refuels: FuelPurchaseRec
         : 'Klima kullanımı dengeli',
   });
 
-  // 5. Depo Finansörü
-  let pumpHolder: Driver | 'none' = 'none';
-  if (utkuStats.totalSpentOnRefuel > gozdeStats.totalSpentOnRefuel && utkuStats.totalSpentOnRefuel > 0) {
-    pumpHolder = 'utku';
-  } else if (gozdeStats.totalSpentOnRefuel > utkuStats.totalSpentOnRefuel && gozdeStats.totalSpentOnRefuel > 0) {
-    pumpHolder = 'gozde';
+  // 5. Eko Mod Ustası
+  let ecoHolder: Driver | 'none' = 'none';
+  if (utkuStats.ecoTripsCount > gozdeStats.ecoTripsCount && utkuStats.ecoTripsCount > 0) {
+    ecoHolder = 'utku';
+  } else if (gozdeStats.ecoTripsCount > utkuStats.ecoTripsCount && gozdeStats.ecoTripsCount > 0) {
+    ecoHolder = 'gozde';
   }
   badges.push({
-    id: 'gas-payer',
-    title: 'Depo Finansörü',
-    icon: '⛽',
-    holder: pumpHolder,
-    detail: pumpHolder === 'utku'
-      ? `Pompada ${utkuStats.totalSpentOnRefuel.toLocaleString('tr-TR')} ₺ ödedi`
-      : pumpHolder === 'gozde'
-        ? `Pompada ${gozdeStats.totalSpentOnRefuel.toLocaleString('tr-TR')} ₺ ödedi`
-        : 'Ödemeler dengede',
+    id: 'eco-master',
+    title: 'Eko Sürüş Ustası',
+    icon: '🌱',
+    holder: ecoHolder,
+    detail: ecoHolder === 'utku'
+      ? `Utku ${utkuStats.ecoTripsCount} kez eko sürüş yaptı`
+      : ecoHolder === 'gozde'
+        ? `Gözde ${gozdeStats.ecoTripsCount} kez eko sürüş yaptı`
+        : 'Eko sürüşler dengeli',
   });
 
   return badges;

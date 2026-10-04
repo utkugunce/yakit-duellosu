@@ -1,11 +1,11 @@
 import React from 'react';
 import {
   Trophy, Flame, TrendingDown, ArrowRight, Gauge, DollarSign,
-  Fuel, ShieldCheck, Sparkles, Navigation2
+  Fuel, Sparkles, Navigation2
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip,
-  CartesianGrid, BarChart, Bar, Legend, Cell
+  CartesianGrid, BarChart, Bar, Legend
 } from 'recharts';
 import { TripRecord, FuelPurchaseRecord, CarSettings } from '../types';
 import {
@@ -27,20 +27,21 @@ interface DuelDashboardPageProps {
 export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   trips,
   refuels,
-  settings,
-  onOpenTripModal,
-  onOpenFuelModal,
   onNavigateToTrips,
   onNavigateToRoutes,
 }) => {
-  const duel = calculateDuel(trips, refuels);
-  const badges = calculateFunBadges(trips, refuels);
+  const duel = calculateDuel(trips);
+  const badges = calculateFunBadges(trips);
   const routeTypeData = calculateRouteTypeComparisons(trips);
 
   const totalCarKm = Math.round(trips.reduce((acc, t) => acc + t.distance, 0) * 10) / 10;
   const totalCarFuel = Math.round(trips.reduce((acc, t) => acc + t.fuelConsumed, 0) * 10) / 10;
   const totalCarCost = Math.round(trips.reduce((acc, t) => acc + t.fuelCost, 0));
   const carAvgConsumption = totalCarKm > 0 ? Math.round((totalCarFuel / totalCarKm) * 100 * 10) / 10 : 0;
+
+  // Refuel metrics from receipts
+  const totalFuelPurchasedLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 10) / 10;
+  const totalFuelPurchasedAmount = Math.round(refuels.reduce((acc, r) => acc + r.totalAmount, 0));
 
   // Chart data: chronological trips
   const sortedTrips = [...trips].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -272,118 +273,21 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-semibold mb-1">
             <DollarSign className="w-4 h-4 text-amber-500" />
-            <span>Toplam Yakıt Bedeli</span>
+            <span>Alınan Toplam Benzin</span>
           </div>
           <div className="text-xl font-bold text-slate-900 dark:text-white">
-            {totalCarCost.toLocaleString('tr-TR')} <span className="text-xs font-normal text-slate-400">₺</span>
+            {totalFuelPurchasedLiters > 0 ? totalFuelPurchasedLiters.toLocaleString('tr-TR') : totalCarFuel.toLocaleString('tr-TR')} <span className="text-xs font-normal text-slate-400">L</span>
           </div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-semibold mb-1">
             <Navigation2 className="w-4 h-4 text-indigo-500" />
-            <span>KM Başı Maliyet</span>
+            <span>Toplam Benzin Tutarı</span>
           </div>
           <div className="text-xl font-bold text-slate-900 dark:text-white">
-            {totalCarKm > 0 ? (Math.round((totalCarCost / totalCarKm) * 100) / 100).toLocaleString('tr-TR') : '0'}{' '}
-            <span className="text-xs font-normal text-slate-400">₺/km</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Fair Expense Sharing Card (Ortak Masraf ve Borç Hesabı) */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                Adil Masraf Dengesi & Hesap Kapatma
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pompada ödenen para ile gerçek tüketilen yakıt arasındaki hak dengesi
-              </p>
-            </div>
-          </div>
-
-          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-            {refuels.length} Fiş Kaydı
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">
-              👨‍💻 Utku'nun Durumu
-            </span>
-            <div className="text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Pompada Ödediği:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {duel.costBalance.utkuPaidAtPump.toLocaleString('tr-TR')} ₺
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Tükettiği Yakıt:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {duel.costBalance.utkuConsumedValue.toLocaleString('tr-TR')} ₺
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">
-              👩‍💼 Gözde'nin Durumu
-            </span>
-            <div className="text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Pompada Ödediği:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {duel.costBalance.gozdePaidAtPump.toLocaleString('tr-TR')} ₺
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Tükettiği Yakıt:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {duel.costBalance.gozdeConsumedValue.toLocaleString('tr-TR')} ₺
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Balance verdict */}
-          <div
-            className={`p-3.5 rounded-xl border flex flex-col justify-center items-center text-center ${
-              duel.costBalance.debtor === 'settled'
-                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
-                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
-            }`}
-          >
-            {duel.costBalance.debtor === 'settled' ? (
-              <>
-                <span className="text-xl mb-1">🤝</span>
-                <span className="text-xs font-bold">Masraflar Dengede!</span>
-                <span className="text-[10px] opacity-80 mt-0.5">Kimsenin kimseye yakıt borcu yok</span>
-              </>
-            ) : (
-              <>
-                <span className="text-xs font-semibold uppercase tracking-wider opacity-80">
-                  KİM KİME BORÇLU?
-                </span>
-                <div className="text-base font-extrabold mt-0.5">
-                  {duel.costBalance.debtor === 'gozde' ? 'Gözde ➔ Utku’ya' : 'Utku ➔ Gözde’ye'}
-                </div>
-                <div className="text-lg font-black mt-0.5">
-                  {duel.costBalance.debtAmount.toLocaleString('tr-TR')} ₺
-                </div>
-                <span className="text-[10px] opacity-75 mt-0.5">
-                  (Bir depo benzin veya kahve ikramı ile kapatılabilir ☕)
-                </span>
-              </>
-            )}
+            {totalFuelPurchasedAmount > 0 ? totalFuelPurchasedAmount.toLocaleString('tr-TR') : totalCarCost.toLocaleString('tr-TR')}{' '}
+            <span className="text-xs font-normal text-slate-400">₺</span>
           </div>
         </div>
       </div>
@@ -393,7 +297,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
             <Trophy className="w-4 h-4 text-amber-500" />
-            <span>Kupa & Eğlenceli Rozetler</span>
+            <span>Kupa & Rozetler</span>
           </h3>
           <span className="text-xs text-slate-500">Utku vs Gözde Karşılaştırması</span>
         </div>

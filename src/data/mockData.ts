@@ -214,30 +214,26 @@ export const INITIAL_MOCK_TRIPS: TripRecord[] = [
 export const INITIAL_MOCK_REFUELS: FuelPurchaseRecord[] = [
   {
     id: 'fuel-1',
-    driver: 'utku',
-    paidBy: 'utku',
     date: '2026-09-20T19:00',
     liters: 38.5,
-    pricePerLiter: 44.50,
     totalAmount: 1713.25,
+    pricePerLiter: 44.50,
     odometer: 45090,
     station: 'Shell',
     fullTank: true,
-    notes: 'V-Power kurşunsuz, depo tam dolduruldu',
+    notes: 'Fiş No: 0142, Shell V-Power',
     createdAt: '2026-09-20T19:05:00.000Z'
   },
   {
     id: 'fuel-2',
-    driver: 'gozde',
-    paidBy: 'gozde',
     date: '2026-09-29T10:15',
     liters: 32.0,
-    pricePerLiter: 44.75,
     totalAmount: 1432.00,
+    pricePerLiter: 44.75,
     odometer: 45440,
     station: 'Opet',
     fullTank: true,
-    notes: 'Sapanca dönüşü sonrası depoyu doldurdum',
+    notes: 'Fiş No: 0883, Opet Ultra Kurşunsuz',
     createdAt: '2026-09-29T10:20:00.000Z'
   }
 ];

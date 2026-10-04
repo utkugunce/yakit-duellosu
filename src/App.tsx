@@ -87,7 +87,7 @@ function AppContent() {
       if (t.endOdometer > maxOdo) maxOdo = t.endOdometer;
     }
     for (const r of refuels) {
-      if (r.odometer > maxOdo) maxOdo = r.odometer;
+      if (r.odometer && r.odometer > maxOdo) maxOdo = r.odometer;
     }
     return maxOdo;
   }, [trips, refuels]);
