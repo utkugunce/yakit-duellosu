@@ -33,38 +33,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 }) => {
   const { showToast } = useToast();
   const [formData, setFormData] = useState<CarSettings>({ ...settings });
-  const [newRouteInput, setNewRouteInput] = useState('');
   const [copiedSql, setCopiedSql] = useState(false);
 
   const handleSaveCarSettings = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateSettings(formData);
     showToast('Araç ayarları başarıyla kaydedildi!', 'success');
-  };
-
-  const handleAddRoute = () => {
-    if (!newRouteInput.trim()) return;
-    if (formData.commonRoutes.includes(newRouteInput.trim())) {
-      showToast('Bu rota zaten listede mevcut.', 'info');
-      return;
-    }
-    const updated = {
-      ...formData,
-      commonRoutes: [...formData.commonRoutes, newRouteInput.trim()]
-    };
-    setFormData(updated);
-    onUpdateSettings(updated);
-    setNewRouteInput('');
-    showToast('Yeni hızlı rota eklendi.', 'success');
-  };
-
-  const handleRemoveRoute = (routeToRemove: string) => {
-    const updated = {
-      ...formData,
-      commonRoutes: formData.commonRoutes.filter(r => r !== routeToRemove)
-    };
-    setFormData(updated);
-    onUpdateSettings(updated);
   };
 
   const handleExportJSON = () => {
@@ -236,59 +210,7 @@ CREATE POLICY "Allow all access" ON yakit_duellosu FOR ALL USING (true) WITH CHE
         </form>
       </div>
 
-      {/* 2. Common Routes Manager */}
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div>
-          <h3 className="text-base font-bold text-slate-900 dark:text-white">
-            Sık Kullanılan Hızlı Rotalar
-          </h3>
-          <p className="text-xs text-slate-500">
-            Sürüş eklerken tek tıkla seçebileceğiniz hazır güzergahlar
-          </p>
-        </div>
-
-        {/* Add new route */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newRouteInput}
-            onChange={e => setNewRouteInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddRoute()}
-            placeholder="Yeni rota adı ekle (Örn: Beşiktaş ➔ Kadıköy)"
-            className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-          />
-          <button
-            type="button"
-            onClick={handleAddRoute}
-            className="px-4 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors flex items-center gap-1"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Ekle</span>
-          </button>
-        </div>
-
-        {/* Existing routes pills */}
-        <div className="flex flex-wrap gap-2 pt-1">
-          {formData.commonRoutes.map((route, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300"
-            >
-              <span>{route}</span>
-              <button
-                type="button"
-                onClick={() => handleRemoveRoute(route)}
-                className="p-0.5 rounded-md text-slate-400 hover:text-rose-500 transition-colors ml-1"
-                title="Rotayı kaldır"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 3. Cloud Sync (Supabase for Utku & Gözde) */}
+      {/* 2. Cloud Sync (Supabase for Utku & Gözde) */}
       <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2.5">

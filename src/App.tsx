@@ -17,7 +17,6 @@ import { AddFuelModal } from './components/modals/AddFuelModal';
 // Pages
 import { DuelDashboardPage } from './pages/DuelDashboardPage';
 import { TripsPage } from './pages/TripsPage';
-import { RoutesComparisonPage } from './pages/RoutesComparisonPage';
 import { RefuelsPage } from './pages/RefuelsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
@@ -104,10 +103,10 @@ function AppContent() {
     let nextTrips: TripRecord[];
     if (editingTrip) {
       nextTrips = trips.map(t => (t.id === trip.id ? trip : t));
-      showToast('Sürüş kaydı güncellendi!', 'success');
+      showToast('Günün kaydı güncellendi!', 'success');
     } else {
       nextTrips = [trip, ...trips];
-      showToast(`Yeni sürüş kaydedildi (${trip.distance} km, ${trip.avgConsumption} L/100km)`, 'success');
+      showToast(`Günün kaydı eklendi (${trip.distance} km, ${trip.avgConsumption} L/100km)`, 'success');
     }
     updateTrips(nextTrips);
     setEditingTrip(null);
@@ -121,7 +120,7 @@ function AppContent() {
   const handleDeleteTrip = (tripId: string) => {
     const nextTrips = trips.filter(t => t.id !== tripId);
     updateTrips(nextTrips);
-    showToast('Sürüş kaydı silindi.', 'info');
+    showToast('Gün kaydı silindi.', 'info');
 
     if (settings.supabaseUrl && settings.supabaseKey) {
       handleSyncUploadSilent(nextTrips, refuels, settings);
@@ -251,17 +250,7 @@ function AppContent() {
           <DuelDashboardPage
             trips={trips}
             refuels={refuels}
-            settings={settings}
-            onOpenTripModal={() => {
-              setEditingTrip(null);
-              setIsTripModalOpen(true);
-            }}
-            onOpenFuelModal={() => {
-              setEditingRefuel(null);
-              setIsFuelModalOpen(true);
-            }}
             onNavigateToTrips={() => setActiveTab('trips')}
-            onNavigateToRoutes={() => setActiveTab('routes')}
           />
         )}
 
@@ -277,13 +266,6 @@ function AppContent() {
               setIsTripModalOpen(true);
             }}
             onDeleteTrip={handleDeleteTrip}
-          />
-        )}
-
-        {activeTab === 'routes' && (
-          <RoutesComparisonPage
-            trips={trips}
-            settings={settings}
           />
         )}
 

@@ -1,38 +1,32 @@
 import React from 'react';
 import {
   Trophy, Flame, TrendingDown, ArrowRight, Gauge, DollarSign,
-  Fuel, Sparkles, Navigation2
+  Fuel, Sparkles, Navigation2, CalendarDays
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip,
   CartesianGrid, BarChart, Bar, Legend
 } from 'recharts';
-import { TripRecord, FuelPurchaseRecord, CarSettings } from '../types';
+import { DailyLog, FuelPurchaseRecord } from '../types';
 import {
-  calculateDuel, calculateFunBadges, calculateRouteTypeComparisons,
+  calculateDuel, calculateFunBadges,
   DRIVER_CONFIG
 } from '../utils/duelAnalytics';
 import { fireWinnerConfetti } from '../utils/confetti';
 
 interface DuelDashboardPageProps {
-  trips: TripRecord[];
+  trips: DailyLog[];
   refuels: FuelPurchaseRecord[];
-  settings: CarSettings;
-  onOpenTripModal: () => void;
-  onOpenFuelModal: () => void;
   onNavigateToTrips: () => void;
-  onNavigateToRoutes: () => void;
 }
 
 export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   trips,
   refuels,
   onNavigateToTrips,
-  onNavigateToRoutes,
 }) => {
   const duel = calculateDuel(trips);
   const badges = calculateFunBadges(trips);
-  const routeTypeData = calculateRouteTypeComparisons(trips);
 
   const totalCarKm = Math.round(trips.reduce((acc, t) => acc + t.distance, 0) * 10) / 10;
   const totalCarFuel = Math.round(trips.reduce((acc, t) => acc + t.fuelConsumed, 0) * 10) / 10;
@@ -43,17 +37,30 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   const totalFuelPurchasedLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 10) / 10;
   const totalFuelPurchasedAmount = Math.round(refuels.reduce((acc, r) => acc + r.totalAmount, 0));
 
-  // Chart data: chronological trips
+  // Chart data: chronological daily logs
   const sortedTrips = [...trips].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const chartData = sortedTrips.slice(-10).map((t, idx) => ({
-    name: `${new Date(t.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} #${idx + 1}`,
+  const chartData = sortedTrips.slice(-12).map((t) => ({
+    name: new Date(t.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
     driver: t.driver,
     consumption: t.avgConsumption,
     utku: t.driver === 'utku' ? t.avgConsumption : null,
     gozde: t.driver === 'gozde' ? t.avgConsumption : null,
-    route: t.routeName,
     distance: t.distance,
   }));
+
+  // Side-by-side Driver Comparison Data for Bar Chart
+  const driverComparisonData = [
+    {
+      metric: 'Ort. Tüketim (L/100km)',
+      Utku: duel.utkuStats.avgConsumption,
+      Gözde: duel.gozdeStats.avgConsumption,
+    },
+    {
+      metric: 'En İyi Gün (L/100km)',
+      Utku: duel.utkuStats.bestConsumption,
+      Gözde: duel.gozdeStats.bestConsumption,
+    },
+  ];
 
   const winnerConfig = duel.winner && duel.winner !== 'tie' ? DRIVER_CONFIG[duel.winner] : null;
 
@@ -77,7 +84,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                   BÜYÜK YAKIT DÜELLOSU
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white/80">
-                  {trips.length} Sürüş Kaydı
+                  {trips.length} Günlük Kayıt
                 </span>
               </div>
               <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">
@@ -125,7 +132,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                     )}
                   </div>
                   <p className="text-xs text-sky-200/80">
-                    {duel.utkuStats.totalTrips} Sürüş • {duel.utkuStats.totalDistance} km
+                    {duel.utkuStats.totalDays} Gün Kullandı • {duel.utkuStats.totalDistance} km
                   </p>
                 </div>
               </div>
@@ -156,7 +163,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                 </span>
               </div>
               <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">En İyi Sürüş</span>
+                <span className="text-[10px] text-slate-400 block">En İyi Gün</span>
                 <span className="text-xs sm:text-sm font-bold text-emerald-400">
                   {duel.utkuStats.bestConsumption > 0 ? `${duel.utkuStats.bestConsumption} L` : '—'}
                 </span>
@@ -187,7 +194,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                     )}
                   </div>
                   <p className="text-xs text-pink-200/80">
-                    {duel.gozdeStats.totalTrips} Sürüş • {duel.gozdeStats.totalDistance} km
+                    {duel.gozdeStats.totalDays} Gün Kullandı • {duel.gozdeStats.totalDistance} km
                   </p>
                 </div>
               </div>
@@ -218,7 +225,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                 </span>
               </div>
               <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">En İyi Sürüş</span>
+                <span className="text-[10px] text-slate-400 block">En İyi Gün</span>
                 <span className="text-xs sm:text-sm font-bold text-emerald-400">
                   {duel.gozdeStats.bestConsumption > 0 ? `${duel.gozdeStats.bestConsumption} L` : '—'}
                 </span>
@@ -229,21 +236,14 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
         {/* Duel Verdict Callout */}
         {duel.differenceLitersPer100Km > 0 && winnerConfig && (
-          <div className="relative z-10 mt-5 p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs sm:text-sm">
+          <div className="relative z-10 mt-5 p-3.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between text-xs sm:text-sm">
             <div className="flex items-center gap-2">
-              <TrendingDown className="w-4 h-4 text-emerald-400" />
+              <TrendingDown className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                <strong className="text-white font-bold">{winnerConfig.name}</strong>, 100 kilometrede{' '}
+                <strong className="text-white font-bold">{winnerConfig.name}</strong>, 100 kilometrede ortalama{' '}
                 <strong className="text-emerald-400 font-bold">{duel.differenceLitersPer100Km} Litre</strong> daha az benzin tüketiyor!
               </span>
             </div>
-            <button
-              onClick={onNavigateToRoutes}
-              className="text-xs text-brand-300 hover:text-white flex items-center gap-1 font-semibold transition-colors"
-            >
-              <span>Rota Kıyası</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
           </div>
         )}
       </div>
@@ -299,10 +299,10 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
             <Trophy className="w-4 h-4 text-amber-500" />
             <span>Kupa & Rozetler</span>
           </h3>
-          <span className="text-xs text-slate-500">Utku vs Gözde Karşılaştırması</span>
+          <span className="text-xs text-slate-500">Utku vs Gözde Performansları</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {badges.map(badge => {
             const isUtku = badge.holder === 'utku';
             const isGozde = badge.holder === 'gozde';
@@ -349,10 +349,10 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-              Sürüş Tüketim Trendi (L/100km)
+              Günlük Tüketim Trendi (L/100km)
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Son sürüşlerde Utku (Mavi) ve Gözde'nin (Pembe) yakıt tüketimleri
+              Gün sonlarında Utku (Mavi) ve Gözde'nin (Pembe) ortalama yakıt tüketimleri
             </p>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium">
@@ -380,7 +380,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                       const data = payload[0].payload;
                       return (
                         <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl text-xs space-y-1 border border-slate-700">
-                          <p className="font-bold text-slate-200">{data.route}</p>
+                          <p className="font-bold text-slate-200">{data.name}</p>
                           <p className="text-slate-400">Mesafe: {data.distance} km</p>
                           <p className={data.driver === 'utku' ? 'text-sky-400 font-bold' : 'text-pink-400 font-bold'}>
                             Sürücü: {data.driver === 'utku' ? 'Utku' : 'Gözde'} • {data.consumption} L/100km
@@ -413,80 +413,57 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-slate-400 text-xs">
-              Henüz grafik için yeterli sürüş kaydı yok
+              Henüz grafik için yeterli kayıt yok
             </div>
           )}
         </div>
       </div>
 
-      {/* Route Condition Comparison Bar Chart */}
+      {/* Side-by-side Driver Comparison Bar Chart */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-              Trafik ve Yol Durumuna Göre Tüketim
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Şehir içi yoğun, akıcı ve otoyolda kim ne kadar yakıyor?
-            </p>
-          </div>
-          <button
-            onClick={onNavigateToRoutes}
-            className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto"
-          >
-            <span>Detaylı Rota Analizi</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+        <div>
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+            Genel Performans Kıyaslaması
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Ortalama ve en iyi gün sonu tüketim göstergeleri
+          </p>
         </div>
 
-        <div className="h-64 w-full">
+        <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={routeTypeData}
+              data={driverComparisonData}
               margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="metric" tick={{ fontSize: 11 }} />
               <YAxis unit=" L" tick={{ fontSize: 11 }} />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const d = payload[0].payload;
-                    return (
-                      <div className="bg-slate-900 text-white p-2.5 rounded-xl shadow-xl text-xs space-y-1 border border-slate-700">
-                        <p className="font-bold">{d.icon} {d.label}</p>
-                        <p className="text-sky-400">Utku: {d.utkuAvg > 0 ? `${d.utkuAvg} L/100km (${d.utkuKm} km)` : 'Sürüş yok'}</p>
-                        <p className="text-pink-400">Gözde: {d.gozdeAvg > 0 ? `${d.gozdeAvg} L/100km (${d.gozdeKm} km)` : 'Sürüş yok'}</p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
+              <Tooltip />
               <Legend />
-              <Bar dataKey="utkuAvg" name="Utku (L/100km)" fill="#0284c7" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="gozdeAvg" name="Gözde (L/100km)" fill="#db2777" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Utku" fill="#0284c7" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Gözde" fill="#db2777" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Recent Trips Quick Widget */}
+      {/* Recent Daily Logs Quick Widget */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-              Son Yapılan Sürüşler
+              Son Günlük Kayıtlar
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              En son kaydedilen sürüş kayıtları
+              En son girilen gün sonu kayıtları
             </p>
           </div>
           <button
             onClick={onNavigateToTrips}
             className="text-xs text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1"
           >
-            <span>Tümünü Gör ({trips.length})</span>
+            <span>Tüm Günleri Gör ({trips.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -505,8 +482,9 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                   </span>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        {trip.routeName}
+                      <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
+                        <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
+                        {new Date(trip.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'short' })}
                       </span>
                       <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded ${
                         isUtku ? 'text-sky-700 bg-sky-100 dark:text-sky-300 dark:bg-sky-950/60' : 'text-pink-700 bg-pink-100 dark:text-pink-300 dark:bg-pink-950/60'
@@ -515,7 +493,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                       </span>
                     </div>
                     <span className="text-[11px] text-slate-400">
-                      {new Date(trip.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} • {trip.distance} km
+                      {trip.distance} km • Sayaç: {trip.startOdometer} ➔ {trip.endOdometer} km
                     </span>
                   </div>
                 </div>

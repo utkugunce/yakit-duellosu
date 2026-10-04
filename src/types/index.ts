@@ -1,30 +1,23 @@
 export type Driver = 'utku' | 'gozde';
 
-export type RouteType = 'city_heavy' | 'city_smooth' | 'highway' | 'mixed';
-
-export type DrivingStyle = 'eco' | 'normal' | 'sport';
-
-export type ACState = 'on' | 'off';
-
-export interface TripRecord {
+export interface DailyLog {
   id: string;
-  driver: Driver;
-  date: string; // ISO date string YYYY-MM-DDTHH:mm
-  routeName: string; // e.g. "Ev -> İş"
-  routeType: RouteType;
-  startOdometer: number;
-  endOdometer: number;
-  distance: number; // km
-  avgConsumption: number; // L/100km
-  fuelPrice: number; // TL/L
-  fuelConsumed: number; // calculated: (distance * avgConsumption) / 100
-  fuelCost: number; // calculated: fuelConsumed * fuelPrice
-  costPerKm: number; // calculated: fuelCost / distance
-  drivingStyle: DrivingStyle;
-  ac: ACState;
-  notes?: string;
+  driver: Driver; // Günün sürücüsü
+  date: string; // Günün tarihi (YYYY-MM-DD veya YYYY-MM-DDTHH:mm)
+  startOdometer: number; // Gün başı KM
+  endOdometer: number; // Gün sonu KM
+  distance: number; // O gün yapılan mesafe (km)
+  avgConsumption: number; // Yol bilgisayarı gün sonu ortalaması (L/100km)
+  fuelPrice: number; // Benzin litre fiyatı (TL/L)
+  fuelConsumed: number; // O gün harcanan yakıt: (distance * avgConsumption) / 100
+  fuelCost: number; // O günkü yakıt masrafı: fuelConsumed * fuelPrice
+  costPerKm: number; // KM başına maliyet: fuelCost / distance
+  notes?: string; // Gün sonu notu (opsiyonel)
   createdAt: string;
 }
+
+// Geriye dönük uyumluluk için alias
+export type TripRecord = DailyLog;
 
 export interface FuelPurchaseRecord {
   id: string;
@@ -46,7 +39,6 @@ export interface CarSettings {
   tankCapacity: number;
   currentFuelPrice: number; // TL/L default
   activeDriver: Driver;
-  commonRoutes: string[];
   supabaseUrl?: string;
   supabaseKey?: string;
   syncEnabled?: boolean;
@@ -58,15 +50,14 @@ export interface DriverStats {
   name: string;
   avatar: string;
   color: string;
-  totalTrips: number;
-  totalDistance: number; // km
-  totalFuelConsumed: number; // Liters
-  totalFuelCost: number; // TL
-  avgConsumption: number; // L/100km weighted average
-  avgCostPerKm: number; // TL/km
-  bestConsumption: number; // Lowest L/100km
-  highestConsumption: number; // Highest L/100km
-  ecoTripsCount: number;
+  totalDays: number; // Arabayı kullandığı gün sayısı
+  totalDistance: number; // Toplam yapılan km
+  totalFuelConsumed: number; // Toplam tüketilen litre
+  totalFuelCost: number; // Toplam yakıt bedeli (TL)
+  avgConsumption: number; // Ortalama L/100km
+  avgCostPerKm: number; // Ortalama TL/km
+  bestConsumption: number; // En ekonomik günün tüketimi
+  highestConsumption: number; // En yüksek günün tüketimi
 }
 
 export interface DuelComparison {

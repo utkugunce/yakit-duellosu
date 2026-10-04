@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calculator, Sparkles, Navigation2, Flame } from 'lucide-react';
-import { Driver, TripRecord, RouteType, DrivingStyle, ACState, CarSettings } from '../../types';
-import { DRIVER_CONFIG, ROUTE_TYPE_LABELS } from '../../utils/duelAnalytics';
+import { X, CalendarDays, Calculator } from 'lucide-react';
+import { Driver, DailyLog, CarSettings } from '../../types';
+import { DRIVER_CONFIG } from '../../utils/duelAnalytics';
 
 interface AddTripModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (trip: TripRecord) => void;
-  editingTrip?: TripRecord | null;
+  onSave: (trip: DailyLog) => void;
+  editingTrip?: DailyLog | null;
   lastOdometer: number;
   settings: CarSettings;
 }
@@ -22,52 +22,35 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
 }) => {
   const [driver, setDriver] = useState<Driver>(settings.activeDriver);
   const [date, setDate] = useState<string>('');
-  const [routeName, setRouteName] = useState<string>('');
-  const [routeType, setRouteType] = useState<RouteType>('city_heavy');
   const [inputMode, setInputMode] = useState<'odometer' | 'distance'>('odometer');
   const [startOdo, setStartOdo] = useState<string>('');
   const [endOdo, setEndOdo] = useState<string>('');
   const [distance, setDistance] = useState<string>('');
   const [avgConsumption, setAvgConsumption] = useState<string>('6.5');
   const [fuelPrice, setFuelPrice] = useState<string>(settings.currentFuelPrice.toString());
-  const [drivingStyle, setDrivingStyle] = useState<DrivingStyle>('normal');
-  const [ac, setAc] = useState<ACState>('off');
   const [notes, setNotes] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
       if (editingTrip) {
         setDriver(editingTrip.driver);
-        setDate(editingTrip.date);
-        setRouteName(editingTrip.routeName);
-        setRouteType(editingTrip.routeType);
+        setDate(editingTrip.date.slice(0, 10));
         setStartOdo(editingTrip.startOdometer.toString());
         setEndOdo(editingTrip.endOdometer.toString());
         setDistance(editingTrip.distance.toString());
         setAvgConsumption(editingTrip.avgConsumption.toString());
         setFuelPrice(editingTrip.fuelPrice.toString());
-        setDrivingStyle(editingTrip.drivingStyle);
-        setAc(editingTrip.ac);
         setNotes(editingTrip.notes || '');
       } else {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const mins = String(now.getMinutes()).padStart(2, '0');
-        setDate(`${year}-${month}-${day}T${hours}:${mins}`);
+        const today = new Date().toISOString().slice(0, 10);
+        setDate(today);
 
         setDriver(settings.activeDriver);
-        setRouteName(settings.commonRoutes[0] || 'Ev ➔ İş');
-        setRouteType('city_heavy');
         setStartOdo(lastOdometer > 0 ? lastOdometer.toString() : '45000');
         setEndOdo('');
         setDistance('');
-        setAvgConsumption('6.8');
+        setAvgConsumption('6.5');
         setFuelPrice(settings.currentFuelPrice.toString());
-        setDrivingStyle('normal');
-        setAc('off');
         setNotes('');
         setInputMode('odometer');
       }
@@ -103,27 +86,25 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
       finalEnd = numStart + finalDist;
     } else {
       if (numEnd <= numStart) {
-        alert('Bitiş kilometresi başlangıç kilometresinden büyük olmalıdır!');
+        alert('Gün sonu kilometresi gün başı kilometresinden büyük olmalıdır!');
         return;
       }
     }
 
     if (finalDist <= 0) {
-      alert('Lütfen geçerli bir sürüş mesafesi girin!');
+      alert('Lütfen bugün yapılan mesafeyi (KM) girin!');
       return;
     }
 
     if (numConsumption <= 0) {
-      alert('Lütfen ortalama yakıt tüketimini girin (L/100km)!');
+      alert('Lütfen gün sonu ortalama yakıt tüketimini girin (L/100km)!');
       return;
     }
 
-    const trip: TripRecord = {
-      id: editingTrip ? editingTrip.id : `trip-${Date.now()}`,
+    const trip: DailyLog = {
+      id: editingTrip ? editingTrip.id : `day-${Date.now()}`,
       driver,
       date,
-      routeName: routeName.trim() || 'Genel Sürüş',
-      routeType,
       startOdometer: finalStart,
       endOdometer: finalEnd,
       distance: finalDist,
@@ -132,8 +113,6 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
       fuelConsumed,
       fuelCost,
       costPerKm,
-      drivingStyle,
-      ac,
       notes: notes.trim(),
       createdAt: editingTrip ? editingTrip.createdAt : new Date().toISOString(),
     };
@@ -144,19 +123,19 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8 overflow-hidden">
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8 overflow-hidden">
         {/* Header */}
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/50">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
-              <Navigation2 className="w-5 h-5" />
+              <CalendarDays className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                {editingTrip ? 'Sürüş Kaydını Düzenle' : 'Yeni Sürüş Kaydet'}
+                {editingTrip ? 'Günlük Kaydı Düzenle' : 'Gün Sonu Kaydı (Gün Kaydet)'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Araba yolculuğunun detaylarını ve tüketimini girin
+                Bugün yapılan km ve gün sonu tüketimini kaydedin
               </p>
             </div>
           </div>
@@ -172,7 +151,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
           {/* Driver Selector */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Direksiyonda Kim Vardı?
+              Bugün Arabayı Kim Kullandı?
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -203,71 +182,25 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
             </div>
           </div>
 
-          {/* Route presets & text input */}
+          {/* Date */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Güzergah / Rota Adı
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Günün Tarihi
             </label>
             <input
-              type="text"
+              type="date"
               required
-              value={routeName}
-              onChange={e => setRouteName(e.target.value)}
-              placeholder="Örn: Ev ➔ İş, Kadıköy Sahil..."
-              className="w-full px-3.5 py-2 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
             />
-            {/* Quick route chips */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {settings.commonRoutes.map((route, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setRouteName(route)}
-                  className={`px-2.5 py-1 text-xs rounded-lg transition-colors border ${
-                    routeName === route
-                      ? 'bg-brand-50 dark:bg-brand-950/40 border-brand-300 dark:border-brand-800 text-brand-700 dark:text-brand-300 font-medium'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {route}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Route Type */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Yol / Trafik Durumu
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {(Object.keys(ROUTE_TYPE_LABELS) as RouteType[]).map(typeKey => {
-                const item = ROUTE_TYPE_LABELS[typeKey];
-                const isSelected = routeType === typeKey;
-                return (
-                  <button
-                    key={typeKey}
-                    type="button"
-                    onClick={() => setRouteType(typeKey)}
-                    className={`flex flex-col items-center p-2 rounded-xl border text-center transition-all ${
-                      isSelected
-                        ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium ring-1 ring-brand-500'
-                        : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                    }`}
-                  >
-                    <span className="text-base mb-0.5">{item.icon}</span>
-                    <span className="text-[11px] leading-tight font-medium">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
           </div>
 
           {/* Kilometers / Distance Section */}
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Kilometre & Mesafe
+                Günün Kilometresi
               </span>
               <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
                 <button
@@ -299,7 +232,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                    Başlangıç KM
+                    Gün Başı KM
                   </label>
                   <input
                     type="number"
@@ -311,7 +244,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                    Bitiş KM (Varış)
+                    Gün Sonu KM
                   </label>
                   <input
                     type="number"
@@ -319,7 +252,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
                     required
                     value={endOdo}
                     onChange={e => setEndOdo(e.target.value)}
-                    placeholder={startOdo ? (parseFloat(startOdo) + 20).toString() : '45120'}
+                    placeholder={startOdo ? (parseFloat(startOdo) + 35).toString() : '45135'}
                     className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
                   />
                 </div>
@@ -327,7 +260,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
             ) : (
               <div>
                 <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                  Yapılan Yol Mesafesi (KM)
+                  Bugün Yapılan Toplam Yol (KM)
                 </label>
                 <input
                   type="number"
@@ -335,14 +268,14 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
                   required
                   value={distance}
                   onChange={e => setDistance(e.target.value)}
-                  placeholder="Örn: 24.5"
+                  placeholder="Örn: 35.0"
                   className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
                 />
               </div>
             )}
 
             <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400">
-              <span>Hesaplanan Sürüş:</span>
+              <span>Bugün Yapılan Mesafe:</span>
               <span className="font-bold text-slate-900 dark:text-white text-sm">
                 {calculatedDistance.toLocaleString('tr-TR')} km
               </span>
@@ -353,7 +286,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Ort. Tüketim (Yol Bilgisayarı)
+                Gün Sonu Ortalama Tüketim
               </label>
               <div className="relative">
                 <input
@@ -392,63 +325,21 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
             </div>
           </div>
 
-          {/* Driving Style and AC Toggle */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Sürüş Tarzı
-              </label>
-              <div className="grid grid-cols-3 gap-1">
-                {(['eco', 'normal', 'sport'] as DrivingStyle[]).map(style => (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => setDrivingStyle(style)}
-                    className={`py-1.5 text-xs rounded-lg border capitalize font-medium transition-colors ${
-                      drivingStyle === style
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {style === 'eco' ? 'Eco 🌱' : style === 'normal' ? 'Normal' : 'Sport ⚡'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Klima Durumu
-              </label>
-              <button
-                type="button"
-                onClick={() => setAc(ac === 'on' ? 'off' : 'on')}
-                className={`w-full py-1.5 px-3 rounded-lg border text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
-                  ac === 'on'
-                    ? 'bg-cyan-50 dark:bg-cyan-950/40 border-cyan-400 text-cyan-700 dark:text-cyan-300'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
-                }`}
-              >
-                <span>{ac === 'on' ? '❄️ Klima Açıktı' : '🚫 Klima Kapalıydı'}</span>
-              </button>
-            </div>
-          </div>
-
           {/* Live Preview Card */}
-          <div className="p-3 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 dark:from-slate-800 dark:to-brand-950/40 border border-brand-200 dark:border-brand-900/60">
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-brand-50 to-indigo-50 dark:from-slate-800 dark:to-brand-950/40 border border-brand-200 dark:border-brand-900/60">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-700 dark:text-brand-300 mb-2">
               <Calculator className="w-4 h-4" />
-              <span>Bu Sürüşün Yakıt Hesabı:</span>
+              <span>Günün Yakıt Özeti:</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="bg-white/80 dark:bg-slate-900/80 p-2 rounded-lg">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Tüketilen Yakıt</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Tüketilen Benzin</span>
                 <span className="text-sm font-bold text-slate-900 dark:text-white">
                   {fuelConsumed.toLocaleString('tr-TR')} L
                 </span>
               </div>
               <div className="bg-white/80 dark:bg-slate-900/80 p-2 rounded-lg">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Tahmini Masraf</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Günün Masrafı</span>
                 <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                   {fuelCost.toLocaleString('tr-TR')} ₺
                 </span>
@@ -462,31 +353,18 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
             </div>
           </div>
 
-          {/* Date & Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Tarih ve Saat
-              </label>
-              <input
-                type="datetime-local"
-                value={date}
-                onChange={e => setDate(e.target.value)}
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Notlar (Opsiyonel)
-              </label>
-              <input
-                type="text"
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                placeholder="Trafik, hava durumu vb."
-                className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-              />
-            </div>
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Günün Notu (Opsiyonel)
+            </label>
+            <input
+              type="text"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Örn: İşe gidiş dönüş, yoğun trafik, otoyol vb."
+              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+            />
           </div>
 
           {/* Actions */}
@@ -502,7 +380,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
               type="submit"
               className="px-5 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-md shadow-brand-600/30 transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
-              {editingTrip ? 'Değişiklikleri Kaydet' : 'Sürüşü Kaydet'}
+              {editingTrip ? 'Değişiklikleri Kaydet' : 'Günü Kaydet'}
             </button>
           </div>
         </form>
