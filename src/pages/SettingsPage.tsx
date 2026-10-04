@@ -4,7 +4,7 @@ import {
   Plus, X, Check, Copy, ExternalLink, HelpCircle, AlertTriangle
 } from 'lucide-react';
 import { CarSettings, TripRecord, FuelPurchaseRecord } from '../types';
-import { INITIAL_MOCK_TRIPS, INITIAL_MOCK_REFUELS, DEFAULT_CAR_SETTINGS } from '../data/mockData';
+import { DEFAULT_CAR_SETTINGS } from '../data/mockData';
 import { exportAllDataAsJSON, importAllDataFromJSON } from '../lib/storage';
 import { testSupabaseConnection, isSupabaseConfigured } from '../lib/supabaseSync';
 import { useToast } from '../components/common/Toast';
@@ -76,14 +76,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     };
     reader.readAsText(file);
     e.target.value = '';
-  };
-
-  const handleLoadMockData = () => {
-    if (window.confirm('Örnek demo verilerini yüklemek istediğinizden emin misiniz?')) {
-      onSetTrips(INITIAL_MOCK_TRIPS);
-      onSetRefuels(INITIAL_MOCK_REFUELS);
-      showToast('Örnek sürüş ve yakıt verileri başarıyla yüklendi!', 'success');
-    }
   };
 
   const handleClearAllData = () => {
@@ -426,19 +418,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
             />
           </label>
 
-          {/* Load Mock Data */}
-          <button
-            onClick={handleLoadMockData}
-            className="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
-          >
-            <RefreshCw className="w-4 h-4 text-indigo-500" />
-            <span>Örnek Demo Verileri Yükle</span>
-          </button>
-
           {/* Reset All */}
           <button
             onClick={handleClearAllData}
-            className="flex items-center justify-center gap-2 p-3 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold text-rose-600 dark:text-rose-400 transition-colors"
+            className="sm:col-span-2 flex items-center justify-center gap-2 p-3 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold text-rose-600 dark:text-rose-400 transition-colors"
           >
             <AlertTriangle className="w-4 h-4 text-rose-500" />
             <span>Tüm Kayıtları Temizle</span>

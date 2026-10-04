@@ -1,12 +1,32 @@
 import { TripRecord, FuelPurchaseRecord, CarSettings } from '../types';
-import { DEFAULT_CAR_SETTINGS, INITIAL_MOCK_TRIPS, INITIAL_MOCK_REFUELS } from '../data/mockData';
+import { DEFAULT_CAR_SETTINGS } from '../data/mockData';
 
 const STORAGE_KEYS = {
-  TRIPS: 'yakit_duellosu_trips',
-  REFUELS: 'yakit_duellosu_refuels',
+  TRIPS: 'yakit_duellosu_trips_v2',
+  REFUELS: 'yakit_duellosu_refuels_v2',
   SETTINGS: 'yakit_duellosu_settings',
   THEME: 'yakit_duellosu_theme',
+  INITIALIZED_V2: 'yakit_duellosu_cleaned_v2',
 };
+
+// Auto-clean old mock data on first load of v2
+function ensureStorageCleaned(): void {
+  try {
+    if (typeof window === 'undefined') return;
+    if (!localStorage.getItem(STORAGE_KEYS.INITIALIZED_V2)) {
+      // Remove old mock entries from v1 keys
+      localStorage.removeItem('yakit_duellosu_trips');
+      localStorage.removeItem('yakit_duellosu_refuels');
+      localStorage.removeItem(STORAGE_KEYS.TRIPS);
+      localStorage.removeItem(STORAGE_KEYS.REFUELS);
+      localStorage.setItem(STORAGE_KEYS.INITIALIZED_V2, 'true');
+    }
+  } catch (err) {
+    console.error('Failed to clean old storage:', err);
+  }
+}
+
+ensureStorageCleaned();
 
 export function loadSettingsFromStorage(): CarSettings {
   try {
@@ -30,11 +50,7 @@ export function saveSettingsToStorage(settings: CarSettings): void {
 export function loadTripsFromStorage(): TripRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.TRIPS);
-    if (!raw) {
-      // First visit: initialize with mock trips so app is engaging immediately
-      saveTripsToStorage(INITIAL_MOCK_TRIPS);
-      return INITIAL_MOCK_TRIPS;
-    }
+    if (!raw) return [];
     return JSON.parse(raw);
   } catch (err) {
     console.error('Failed to load trips:', err);
@@ -53,10 +69,7 @@ export function saveTripsToStorage(trips: TripRecord[]): void {
 export function loadRefuelsFromStorage(): FuelPurchaseRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.REFUELS);
-    if (!raw) {
-      saveRefuelsToStorage(INITIAL_MOCK_REFUELS);
-      return INITIAL_MOCK_REFUELS;
-    }
+    if (!raw) return [];
     return JSON.parse(raw);
   } catch (err) {
     console.error('Failed to load refuels:', err);
@@ -79,7 +92,7 @@ export function exportAllDataAsJSON(
 ): string {
   return JSON.stringify(
     {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       settings,
       trips,
