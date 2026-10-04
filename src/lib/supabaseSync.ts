@@ -10,14 +10,36 @@ export interface CloudPayload {
   updated_at: string;
 }
 
+export function getSupabaseConfig(settings?: Partial<CarSettings>): { url: string; key: string } {
+  const url = (settings?.supabaseUrl || import.meta.env.VITE_SUPABASE_URL || '').trim();
+  const key = (settings?.supabaseKey || import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+  return { url, key };
+}
+
+export function isSupabaseConfigured(settings?: Partial<CarSettings>): boolean {
+  const { url, key } = getSupabaseConfig(settings);
+  return Boolean(url && key);
+}
+
+let cachedClient: SupabaseClient | null = null;
+let lastUsedUrl = '';
+let lastUsedKey = '';
+
 export function getSupabaseClient(url?: string, key?: string): SupabaseClient | null {
-  const finalUrl = url || import.meta.env.VITE_SUPABASE_URL || '';
-  const finalKey = key || import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const finalUrl = (url || import.meta.env.VITE_SUPABASE_URL || '').trim();
+  const finalKey = (key || import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
   if (!finalUrl || !finalKey) return null;
 
+  if (cachedClient && lastUsedUrl === finalUrl && lastUsedKey === finalKey) {
+    return cachedClient;
+  }
+
   try {
-    return createClient(finalUrl, finalKey);
+    cachedClient = createClient(finalUrl, finalKey);
+    lastUsedUrl = finalUrl;
+    lastUsedKey = finalKey;
+    return cachedClient;
   } catch (err) {
     console.error('Failed to create Supabase client:', err);
     return null;
@@ -46,7 +68,12 @@ export async function uploadToSupabase(
       .upsert(payload, { onConflict: 'room_id' });
 
     if (error) {
-      // If table yakit_duellosu doesn't exist, provide helpful message
+      if (error.code === '42P01') {
+        return {
+          success: false,
+          error: 'Supabase tablosu ("yakit_duellosu") bulunamadı. Lütfen Ayarlar sekmesindeki SQL kodunu Supabase SQL Editor\'da çalıştırın.'
+        };
+      }
       return { success: false, error: `Supabase Hatası: ${error.message}` };
     }
 
@@ -57,8 +84,8 @@ export async function uploadToSupabase(
 }
 
 export async function downloadFromSupabase(
-  url: string,
-  key: string
+  url?: string,
+  key?: string
 ): Promise<{
   success: boolean;
   data?: { trips: TripRecord[]; refuels: FuelPurchaseRecord[]; settings?: Partial<CarSettings> };
@@ -72,14 +99,20 @@ export async function downloadFromSupabase(
       .from('yakit_duellosu')
       .select('*')
       .eq('room_id', 'utku_gozde_car')
-      .single();
+      .maybeSingle();
 
     if (error) {
+      if (error.code === '42P01') {
+        return {
+          success: false,
+          error: 'Supabase tablosu bulunamadı. Lütfen Ayarlar sekmesindeki SQL kodunu Supabase SQL Editor\'da çalıştırın.'
+        };
+      }
       return { success: false, error: error.message };
     }
 
     if (!data) {
-      return { success: false, error: 'Bulutta henüz kayıtlı araç verisi bulunamadı.' };
+      return { success: false, error: 'Bulutta henüz kayıtlı veri bulunamadı. Önce "Buluta Yükle"ye tıklayarak ilk veriyi gönderebilirsiniz.' };
     }
 
     const trips: TripRecord[] = JSON.parse(data.trips_json || '[]');
@@ -92,5 +125,92 @@ export async function downloadFromSupabase(
     };
   } catch (err: any) {
     return { success: false, error: err?.message || 'Veriler indirilirken hata oluştu' };
+  }
+}
+
+export function subscribeToSupabaseChanges(
+  url: string,
+  key: string,
+  onUpdate: (data: { trips: TripRecord[]; refuels: FuelPurchaseRecord[]; settings?: Partial<CarSettings> }) => void
+): () => void {
+  const client = getSupabaseClient(url, key);
+  if (!client) return () => {};
+
+  try {
+    const channel = client
+      .channel('yakit_duellosu_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'yakit_duellosu', filter: 'room_id=eq.utku_gozde_car' },
+        payload => {
+          const row = payload.new as any;
+          if (row && row.trips_json) {
+            try {
+              const trips = JSON.parse(row.trips_json || '[]');
+              const refuels = JSON.parse(row.refuels_json || '[]');
+              const settings = JSON.parse(row.settings_json || '{}');
+              onUpdate({ trips, refuels, settings });
+            } catch (e) {
+              console.error('Realtime parse hatası:', e);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  } catch (err) {
+    console.warn('Realtime subscription hatası:', err);
+    return () => {};
+  }
+}
+
+export async function testSupabaseConnection(
+  url?: string,
+  key?: string
+): Promise<{ connected: boolean; tableExists: boolean; message: string }> {
+  const client = getSupabaseClient(url, key);
+  if (!client) {
+    return {
+      connected: false,
+      tableExists: false,
+      message: 'Supabase URL veya API Anahtarı eksik.'
+    };
+  }
+
+  try {
+    const { error } = await client
+      .from('yakit_duellosu')
+      .select('room_id')
+      .limit(1);
+
+    if (error) {
+      if (error.code === '42P01') {
+        return {
+          connected: true,
+          tableExists: false,
+          message: 'Supabase API bağlantısı başarılı, ancak "yakit_duellosu" tablosu henüz açılmamış. Aşağıdaki SQL kodunu çalıştırın.'
+        };
+      }
+      return {
+        connected: false,
+        tableExists: false,
+        message: `Supabase Bağlantı Hatası: ${error.message}`
+      };
+    }
+
+    return {
+      connected: true,
+      tableExists: true,
+      message: 'Supabase bağlantısı ve "yakit_duellosu" tablosu sorunsuz çalışıyor!'
+    };
+  } catch (err: any) {
+    return {
+      connected: false,
+      tableExists: false,
+      message: err?.message || 'Supabase sunucusuna ulaşılamadı.'
+    };
   }
 }

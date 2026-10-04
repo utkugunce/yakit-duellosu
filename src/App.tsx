@@ -7,7 +7,11 @@ import {
   loadRefuelsFromStorage, saveRefuelsToStorage,
   loadSettingsFromStorage, saveSettingsToStorage
 } from './lib/storage';
-import { uploadToSupabase, downloadFromSupabase } from './lib/supabaseSync';
+import {
+  uploadToSupabase, downloadFromSupabase,
+  getSupabaseConfig, isSupabaseConfigured,
+  subscribeToSupabaseChanges
+} from './lib/supabaseSync';
 import { Header } from './components/common/Header';
 import { Navigation, ActiveTab } from './components/common/Navigation';
 import { ToastProvider, useToast } from './components/common/Toast';
@@ -91,6 +95,53 @@ function AppContent() {
     return maxOdo;
   }, [trips, refuels]);
 
+  // Automatic Supabase Hydration & Realtime Subscription
+  useEffect(() => {
+    const { url, key } = getSupabaseConfig(settings);
+    if (!url || !key) return;
+
+    // 1. Initial silent sync on mount
+    downloadFromSupabase(url, key).then(result => {
+      const data = result.data;
+      if (result.success && data) {
+        if (data.trips && data.trips.length > 0) updateTrips(data.trips);
+        if (data.refuels && data.refuels.length > 0) updateRefuels(data.refuels);
+        if (data.settings) {
+          setSettings(prev => ({ ...prev, ...data.settings, lastSyncTime: new Date().toISOString() }));
+        }
+      }
+    });
+
+    // 2. Realtime subscription: auto-update when the other driver adds/modifies logs
+    const unsubscribe = subscribeToSupabaseChanges(url, key, data => {
+      if (data.trips) updateTrips(data.trips);
+      if (data.refuels) updateRefuels(data.refuels);
+      if (data.settings) {
+        setSettings(prev => ({ ...prev, ...data.settings, lastSyncTime: new Date().toISOString() }));
+      }
+      showToast('Buluttan yeni kayıtlar anlık olarak güncellendi! ☁️', 'info');
+    });
+
+    // 3. Tab visibility listener (refresh when returning to tab on phone)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        downloadFromSupabase(url, key).then(result => {
+          const data = result.data;
+          if (result.success && data) {
+            if (data.trips && data.trips.length > 0) updateTrips(data.trips);
+            if (data.refuels && data.refuels.length > 0) updateRefuels(data.refuels);
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [settings.supabaseUrl, settings.supabaseKey, updateTrips, updateRefuels]);
+
   // Handle active driver switch
   const handleSelectDriver = (driver: Driver) => {
     const updated = { ...settings, activeDriver: driver };
@@ -112,7 +163,8 @@ function AppContent() {
     setEditingTrip(null);
 
     // Auto-sync if configured
-    if (settings.supabaseUrl && settings.supabaseKey) {
+    const { url, key } = getSupabaseConfig(settings);
+    if (url && key) {
       handleSyncUploadSilent(nextTrips, refuels, settings);
     }
   };
@@ -122,7 +174,8 @@ function AppContent() {
     updateTrips(nextTrips);
     showToast('Gün kaydı silindi.', 'info');
 
-    if (settings.supabaseUrl && settings.supabaseKey) {
+    const { url, key } = getSupabaseConfig(settings);
+    if (url && key) {
       handleSyncUploadSilent(nextTrips, refuels, settings);
     }
   };
@@ -140,7 +193,8 @@ function AppContent() {
     updateRefuels(nextRefuels);
     setEditingRefuel(null);
 
-    if (settings.supabaseUrl && settings.supabaseKey) {
+    const { url, key } = getSupabaseConfig(settings);
+    if (url && key) {
       handleSyncUploadSilent(trips, nextRefuels, settings);
     }
   };
@@ -150,20 +204,22 @@ function AppContent() {
     updateRefuels(nextRefuels);
     showToast('Yakıt alım kaydı silindi.', 'info');
 
-    if (settings.supabaseUrl && settings.supabaseKey) {
+    const { url, key } = getSupabaseConfig(settings);
+    if (url && key) {
       handleSyncUploadSilent(trips, nextRefuels, settings);
     }
   };
 
   // Cloud Sync
   const handleSyncUpload = async () => {
-    if (!settings.supabaseUrl || !settings.supabaseKey) {
+    const { url, key } = getSupabaseConfig(settings);
+    if (!url || !key) {
       showToast('Lütfen önce Ayarlar sekmesinden Supabase bilgilerinizi girin!', 'error');
       return;
     }
 
     setIsSyncing(true);
-    const result = await uploadToSupabase(settings.supabaseUrl, settings.supabaseKey, {
+    const result = await uploadToSupabase(url, key, {
       trips,
       refuels,
       settings
@@ -184,22 +240,24 @@ function AppContent() {
     r: FuelPurchaseRecord[],
     s: CarSettings
   ) => {
-    if (!s.supabaseUrl || !s.supabaseKey) return;
+    const { url, key } = getSupabaseConfig(s);
+    if (!url || !key) return;
     try {
-      await uploadToSupabase(s.supabaseUrl, s.supabaseKey, { trips: t, refuels: r, settings: s });
+      await uploadToSupabase(url, key, { trips: t, refuels: r, settings: s });
     } catch (err) {
       console.warn('Silent sync error:', err);
     }
   };
 
   const handleSyncDownload = async () => {
-    if (!settings.supabaseUrl || !settings.supabaseKey) {
+    const { url, key } = getSupabaseConfig(settings);
+    if (!url || !key) {
       showToast('Lütfen önce Ayarlar sekmesinden Supabase bilgilerinizi girin!', 'error');
       return;
     }
 
     setIsSyncing(true);
-    const result = await downloadFromSupabase(settings.supabaseUrl, settings.supabaseKey);
+    const result = await downloadFromSupabase(url, key);
     setIsSyncing(false);
 
     if (result.success && result.data) {

@@ -2,6 +2,7 @@ import React from 'react';
 import { Fuel, Plus, Sun, Moon, Cloud, RefreshCw, Car } from 'lucide-react';
 import { Driver, CarSettings } from '../../types';
 import { DRIVER_CONFIG } from '../../utils/duelAnalytics';
+import { isSupabaseConfigured } from '../../lib/supabaseSync';
 
 interface HeaderProps {
   settings: CarSettings;
@@ -25,6 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
   isSyncing,
 }) => {
   const activeDriver = settings.activeDriver;
+  const hasCloudSync = isSupabaseConfigured(settings);
 
   return (
     <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
@@ -100,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Cloud Sync Status / Button */}
-          {settings.supabaseUrl && (
+          {hasCloudSync && (
             <button
               onClick={onSync}
               disabled={isSyncing}
@@ -112,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <>
                   <Cloud className="w-4 h-4 text-emerald-500" />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 </>
               )}
             </button>

@@ -6,6 +6,7 @@ import {
 import { CarSettings, TripRecord, FuelPurchaseRecord } from '../types';
 import { INITIAL_MOCK_TRIPS, INITIAL_MOCK_REFUELS, DEFAULT_CAR_SETTINGS } from '../data/mockData';
 import { exportAllDataAsJSON, importAllDataFromJSON } from '../lib/storage';
+import { testSupabaseConnection, isSupabaseConfigured } from '../lib/supabaseSync';
 import { useToast } from '../components/common/Toast';
 
 interface SettingsPageProps {
@@ -93,7 +94,27 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     }
   };
 
-  const sqlCode = `-- Supabase SQL Editor'da tek sefer çalıştırın:
+  const [testingStatus, setTestingStatus] = useState<{
+    status: 'idle' | 'testing' | 'success' | 'warning' | 'error';
+    message?: string;
+  }>({ status: 'idle' });
+
+  const handleTestConnection = async () => {
+    setTestingStatus({ status: 'testing' });
+    const res = await testSupabaseConnection(formData.supabaseUrl, formData.supabaseKey);
+    if (res.connected && res.tableExists) {
+      setTestingStatus({ status: 'success', message: res.message });
+      showToast('Supabase bağlantısı ve tablo başarılı!', 'success');
+    } else if (res.connected && !res.tableExists) {
+      setTestingStatus({ status: 'warning', message: res.message });
+      showToast(res.message, 'warning');
+    } else {
+      setTestingStatus({ status: 'error', message: res.message });
+      showToast(res.message, 'error');
+    }
+  };
+
+  const sqlCode = `-- Supabase SQL Editor'da tek sefer çalıştırın (New Query -> Run):
 CREATE TABLE IF NOT EXISTS yakit_duellosu (
   room_id TEXT PRIMARY KEY,
   trips_json TEXT,
@@ -104,7 +125,11 @@ CREATE TABLE IF NOT EXISTS yakit_duellosu (
 
 -- Okuma ve yazmaya izin verin (Anonim erişim):
 ALTER TABLE yakit_duellosu ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow all access" ON yakit_duellosu FOR ALL USING (true) WITH CHECK (true);`;
+DROP POLICY IF EXISTS "Allow all access" ON yakit_duellosu;
+CREATE POLICY "Allow all access" ON yakit_duellosu FOR ALL USING (true) WITH CHECK (true);
+
+-- Canlı anlık eşitleme (Realtime) desteğini açın:
+ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
 
   const handleCopySql = () => {
     navigator.clipboard.writeText(sqlCode);
@@ -279,17 +304,48 @@ CREATE POLICY "Allow all access" ON yakit_duellosu FOR ALL USING (true) WITH CHE
             />
           </div>
 
+          {/* Status Message */}
+          {testingStatus.status !== 'idle' && (
+            <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+              testingStatus.status === 'success'
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                : testingStatus.status === 'warning'
+                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                : testingStatus.status === 'testing'
+                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+            }`}>
+              {testingStatus.status === 'testing' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+              {testingStatus.status === 'success' && <Check className="w-3.5 h-3.5 text-emerald-500" />}
+              {testingStatus.status === 'warning' && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+              {testingStatus.status === 'error' && <X className="w-3.5 h-3.5 text-rose-500" />}
+              <span>{testingStatus.message || 'Bağlantı kontrol ediliyor...'}</span>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => {
-                onUpdateSettings(formData);
-                showToast('Supabase anahtarları kaydedildi!', 'success');
-              }}
-              className="px-4 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl transition-colors"
-            >
-              Anahtarları Kaydet
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateSettings(formData);
+                  showToast('Supabase anahtarları kaydedildi!', 'success');
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl transition-colors hover:bg-slate-800 dark:hover:bg-slate-100"
+              >
+                Anahtarları Kaydet
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={testingStatus.status === 'testing'}
+                className="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${testingStatus.status === 'testing' ? 'animate-spin' : ''}`} />
+                <span>Bağlantıyı Test Et</span>
+              </button>
+            </div>
 
             <div className="flex items-center gap-2">
               <button
