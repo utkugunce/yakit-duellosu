@@ -303,7 +303,7 @@ function AppContent() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-5 sm:py-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-3.5 sm:px-4 py-4 sm:py-6 pb-28 md:pb-8">
         {activeTab === 'duel' && (
           <DuelDashboardPage
             trips={trips}

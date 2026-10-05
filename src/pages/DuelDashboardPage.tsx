@@ -27,6 +27,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 }) => {
   const duel = calculateDuel(trips);
   const badges = calculateFunBadges(trips);
+  const hasBothDrivers = duel.utkuStats.totalDays > 0 && duel.gozdeStats.totalDays > 0;
 
   const totalCarKm = Math.round(trips.reduce((acc, t) => acc + t.distance, 0) * 10) / 10;
   const totalCarFuel = Math.round(trips.reduce((acc, t) => acc + t.fuelConsumed, 0) * 10) / 10;
@@ -78,27 +79,27 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       {/* Duel Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white p-5 sm:p-7 shadow-2xl border border-slate-700/60">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white p-4 sm:p-6 shadow-2xl border border-slate-700/60">
         {/* Ambient background glow */}
         <div className="absolute top-0 left-1/4 w-72 h-72 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Header of Duel */}
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-white/10">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
-              <Flame className="w-6 h-6 text-amber-400 animate-pulse" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-white/10">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <div className="p-2 sm:p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shrink-0 mt-0.5 sm:mt-0">
+              <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs uppercase tracking-widest font-bold text-amber-400">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] sm:text-xs uppercase tracking-wider font-bold text-amber-400">
                   BÜYÜK YAKIT DÜELLOSU
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white/80">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white/80 whitespace-nowrap">
                   {trips.length} Günlük Kayıt
                 </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">
+              <h2 className="text-base sm:text-xl font-extrabold tracking-tight mt-0.5">
                 Kim Daha Çok Yakıyor?
               </h2>
             </div>
@@ -108,73 +109,85 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
           {duel.winner && duel.winner !== 'tie' && winnerConfig && (
             <button
               onClick={() => fireWinnerConfetti()}
-              className="flex items-center gap-2 self-start sm:self-auto px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-400/10 border border-amber-400/40 text-amber-300 text-xs font-semibold hover:bg-amber-400/20 transition-all active:scale-95 shadow-sm"
+              className="flex items-center gap-1.5 sm:gap-2 self-start sm:self-auto px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-amber-400/10 border border-amber-400/40 text-amber-300 text-xs font-semibold hover:bg-amber-400/20 transition-all active:scale-95 shadow-sm"
               title="Kutlama konfetisi patlat!"
             >
-              <Trophy className="w-4 h-4 text-amber-400" />
-              <span>Lider: {winnerConfig.name} (%{duel.percentageDifference} Tasarruflu)</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <Trophy className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>
+                {hasBothDrivers
+                  ? `Lider: ${winnerConfig.name} (%${duel.percentageDifference} Tasarruflu)`
+                  : `Lider: ${winnerConfig.name}`}
+              </span>
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
             </button>
           )}
         </div>
 
         {/* Head-to-Head Cards */}
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-6">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 pt-4 sm:pt-6">
           {/* Utku Card */}
           <div
-            className={`p-4 sm:p-5 rounded-2xl backdrop-blur-md border transition-all ${
+            className={`p-3.5 sm:p-5 rounded-2xl backdrop-blur-md border transition-all ${
               duel.winner === 'utku'
                 ? 'bg-sky-500/15 border-sky-400/50 shadow-lg shadow-sky-500/10'
                 : 'bg-white/5 border-white/10'
             }`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-2xl shadow-inner">
+            <div className="flex items-center justify-between gap-2.5 mb-3.5">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-sky-500/20 border border-sky-400/40 flex items-center justify-center text-2xl shadow-inner shrink-0">
                   {DRIVER_CONFIG.utku.avatar}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-lg font-bold text-white">Utku</h3>
-                    {duel.winner === 'utku' && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400 text-slate-950 flex items-center gap-1 shadow-sm">
-                        <Trophy className="w-3 h-3" /> ŞAMPİYON
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="text-base font-bold text-white leading-tight">Utku</h3>
+                    {hasBothDrivers && duel.winner === 'utku' && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-amber-400 text-slate-950 flex items-center gap-0.5 shadow-sm whitespace-nowrap">
+                        <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> ŞAMPİYON
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-sky-200/80">
-                    {duel.utkuStats.totalDays} Gün Kullandı • {duel.utkuStats.totalDistance} km
+                  <p className="text-[11px] sm:text-xs text-sky-200/80 mt-0.5 truncate">
+                    {duel.utkuStats.totalDays} Gün • {duel.utkuStats.totalDistance} km
                   </p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 block font-semibold">
+              <div className="text-right shrink-0 bg-white/5 sm:bg-transparent px-2.5 py-1.5 sm:p-0 rounded-xl border border-white/5 sm:border-0">
+                <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 block font-semibold leading-tight">
                   ORTALAMA
                 </span>
-                <span className="text-2xl sm:text-3xl font-black text-sky-400">
-                  {duel.utkuStats.avgConsumption > 0 ? duel.utkuStats.avgConsumption : '—'}
-                </span>
-                <span className="text-xs text-slate-400 ml-1">L/100km</span>
+                <div className="flex items-baseline justify-end gap-1 mt-0.5">
+                  {duel.utkuStats.avgConsumption > 0 ? (
+                    <>
+                      <span className="text-xl sm:text-2xl font-black text-sky-400 leading-none">
+                        {duel.utkuStats.avgConsumption}
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium">L/100km</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-400">Henüz yok</span>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Quick Metrics Grid */}
-            <div className="grid grid-cols-3 gap-2 text-center pt-3 border-t border-white/10">
-              <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">Tüketilen</span>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center pt-3 border-t border-white/10">
+              <div className="bg-black/25 p-2 rounded-xl">
+                <span className="text-[10px] text-slate-400 block font-medium">Tüketilen</span>
                 <span className="text-xs sm:text-sm font-bold text-white">
                   {duel.utkuStats.totalFuelConsumed} L
                 </span>
               </div>
-              <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">Yakıt Masrafı</span>
-                <span className="text-xs sm:text-sm font-bold text-white">
+              <div className="bg-black/25 p-2 rounded-xl">
+                <span className="text-[10px] text-slate-400 block font-medium">Masraf</span>
+                <span className="text-xs sm:text-sm font-bold text-white truncate block">
                   {duel.utkuStats.totalFuelCost.toLocaleString('tr-TR')} ₺
                 </span>
               </div>
-              <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">En İyi Gün</span>
+              <div className="bg-black/25 p-2 rounded-xl">
+                <span className="text-[10px] text-slate-400 block font-medium">En İyi Gün</span>
                 <span className="text-xs sm:text-sm font-bold text-emerald-400">
                   {duel.utkuStats.bestConsumption > 0 ? `${duel.utkuStats.bestConsumption} L` : '—'}
                 </span>
@@ -184,59 +197,67 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
           {/* Gözde Card */}
           <div
-            className={`p-4 sm:p-5 rounded-2xl backdrop-blur-md border transition-all ${
+            className={`p-3.5 sm:p-5 rounded-2xl backdrop-blur-md border transition-all ${
               duel.winner === 'gozde'
                 ? 'bg-pink-500/15 border-pink-400/50 shadow-lg shadow-pink-500/10'
                 : 'bg-white/5 border-white/10'
             }`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-pink-500/20 border border-pink-400/40 flex items-center justify-center text-2xl shadow-inner">
+            <div className="flex items-center justify-between gap-2.5 mb-3.5">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-pink-500/20 border border-pink-400/40 flex items-center justify-center text-2xl shadow-inner shrink-0">
                   {DRIVER_CONFIG.gozde.avatar}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-lg font-bold text-white">Gözde</h3>
-                    {duel.winner === 'gozde' && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-400 text-slate-950 flex items-center gap-1 shadow-sm">
-                        <Trophy className="w-3 h-3" /> ŞAMPİYON
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h3 className="text-base font-bold text-white leading-tight">Gözde</h3>
+                    {hasBothDrivers && duel.winner === 'gozde' && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-amber-400 text-slate-950 flex items-center gap-0.5 shadow-sm whitespace-nowrap">
+                        <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> ŞAMPİYON
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-pink-200/80">
-                    {duel.gozdeStats.totalDays} Gün Kullandı • {duel.gozdeStats.totalDistance} km
+                  <p className="text-[11px] sm:text-xs text-pink-200/80 mt-0.5 truncate">
+                    {duel.gozdeStats.totalDays} Gün • {duel.gozdeStats.totalDistance} km
                   </p>
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 block font-semibold">
+              <div className="text-right shrink-0 bg-white/5 sm:bg-transparent px-2.5 py-1.5 sm:p-0 rounded-xl border border-white/5 sm:border-0">
+                <span className="text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 block font-semibold leading-tight">
                   ORTALAMA
                 </span>
-                <span className="text-2xl sm:text-3xl font-black text-pink-400">
-                  {duel.gozdeStats.avgConsumption > 0 ? duel.gozdeStats.avgConsumption : '—'}
-                </span>
-                <span className="text-xs text-slate-400 ml-1">L/100km</span>
+                <div className="flex items-baseline justify-end gap-1 mt-0.5">
+                  {duel.gozdeStats.avgConsumption > 0 ? (
+                    <>
+                      <span className="text-xl sm:text-2xl font-black text-pink-400 leading-none">
+                        {duel.gozdeStats.avgConsumption}
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-slate-400 font-medium">L/100km</span>
+                    </>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-400">Henüz yok</span>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Quick Metrics Grid */}
-            <div className="grid grid-cols-3 gap-2 text-center pt-3 border-t border-white/10">
-              <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">Tüketilen</span>
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center pt-3 border-t border-white/10">
+              <div className="bg-black/25 p-2 rounded-xl">
+                <span className="text-[10px] text-slate-400 block font-medium">Tüketilen</span>
                 <span className="text-xs sm:text-sm font-bold text-white">
                   {duel.gozdeStats.totalFuelConsumed} L
                 </span>
               </div>
-              <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">Yakıt Masrafı</span>
-                <span className="text-xs sm:text-sm font-bold text-white">
+              <div className="bg-black/25 p-2 rounded-xl">
+                <span className="text-[10px] text-slate-400 block font-medium">Masraf</span>
+                <span className="text-xs sm:text-sm font-bold text-white truncate block">
                   {duel.gozdeStats.totalFuelCost.toLocaleString('tr-TR')} ₺
                 </span>
               </div>
-              <div className="bg-black/20 p-2 rounded-xl">
-                <span className="text-[10px] text-slate-400 block">En İyi Gün</span>
+              <div className="bg-black/25 p-2 rounded-xl">
+                <span className="text-[10px] text-slate-400 block font-medium">En İyi Gün</span>
                 <span className="text-xs sm:text-sm font-bold text-emerald-400">
                   {duel.gozdeStats.bestConsumption > 0 ? `${duel.gozdeStats.bestConsumption} L` : '—'}
                 </span>

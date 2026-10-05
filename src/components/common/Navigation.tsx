@@ -50,8 +50,8 @@ export const Navigation: React.FC<NavigationProps> = ({
       </div>
 
       {/* Mobile Bottom Fixed Nav Bar with FAB */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-safe shadow-lg">
-        <div className="flex items-center justify-around px-2 py-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-safe shadow-xl">
+        <div className="flex items-center justify-around px-2 pt-1 pb-1">
           {/* Left tabs: Düello & Günlük Kayıtlar */}
           <button
             onClick={() => onSelectTab('duel')}
@@ -74,13 +74,13 @@ export const Navigation: React.FC<NavigationProps> = ({
           </button>
 
           {/* Center FAB: Gün Kaydet */}
-          <div className="flex items-center justify-center px-1">
+          <div className="flex items-center justify-center px-2 relative -top-3 shrink-0">
             <button
               onClick={onOpenTripModal}
-              className="w-12 h-12 -mt-5 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white shadow-lg shadow-brand-500/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+              className="w-11 h-11 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white shadow-lg shadow-brand-500/40 flex items-center justify-center hover:scale-105 active:scale-95 transition-all ring-4 ring-white dark:ring-slate-900"
               title="Günün Kaydını Ekle"
             >
-              <Plus className="w-6 h-6 stroke-[2.5]" />
+              <Plus className="w-5 h-5 stroke-[2.5]" />
             </button>
           </div>
 

@@ -30,54 +30,54 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <div className="max-w-6xl mx-auto px-3.5 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
         {/* Logo and Car Info */}
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-tr from-brand-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-md shadow-brand-500/20 flex items-center justify-center">
-            <Fuel className="w-5 h-5" />
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <div className="bg-gradient-to-tr from-brand-600 to-indigo-600 text-white p-2 sm:p-2.5 rounded-xl shadow-md shadow-brand-500/20 flex items-center justify-center shrink-0">
+            <Fuel className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+              <h1 className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-tight truncate">
                 Yakıt Düellosu
               </h1>
-              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
                 <Car className="w-3 h-3 mr-1 text-slate-400" />
                 {settings.plate || settings.carName}
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
               Utku & Gözde • Tüketim Takibi
             </p>
           </div>
         </div>
 
         {/* Center / Right controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Active Driver Switcher Pill */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
             <button
               onClick={() => onSelectDriver('utku')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeDriver === 'utku'
                   ? 'bg-sky-500 text-white shadow-sm shadow-sky-500/30'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="Aktif sürücüyü Utku yap"
             >
-              <span>{DRIVER_CONFIG.utku.avatar}</span>
+              <span className="text-sm sm:text-base">{DRIVER_CONFIG.utku.avatar}</span>
               <span className="hidden xs:inline">Utku</span>
             </button>
             <button
               onClick={() => onSelectDriver('gozde')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeDriver === 'gozde'
                   ? 'bg-pink-500 text-white shadow-sm shadow-pink-500/30'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="Aktif sürücüyü Gözde yap"
             >
-              <span>{DRIVER_CONFIG.gozde.avatar}</span>
+              <span className="text-sm sm:text-base">{DRIVER_CONFIG.gozde.avatar}</span>
               <span className="hidden xs:inline">Gözde</span>
             </button>
           </div>
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onSync}
               disabled={isSyncing}
-              className="p-2 rounded-xl text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-brand-400 dark:hover:bg-slate-800 transition-colors relative"
+              className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-brand-400 dark:hover:bg-slate-800 transition-colors relative"
               title={settings.lastSyncTime ? `Son Eşitleme: ${new Date(settings.lastSyncTime).toLocaleTimeString('tr-TR')}` : 'Bulut Eşitle'}
             >
               {isSyncing ? (
@@ -123,7 +123,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Theme Toggle */}
           <button
             onClick={onToggleTheme}
-            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
             title={isDarkMode ? 'Açık Mod' : 'Karanlık Mod'}
           >
             {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
