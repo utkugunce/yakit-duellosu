@@ -211,7 +211,7 @@ export const TripsPage: React.FC<TripsPageProps> = ({
 
                       <span className="flex items-center gap-1">
                         <Gauge className="w-3.5 h-3.5 text-slate-400" />
-                        Sayaç: {trip.startOdometer.toLocaleString('tr-TR')} ➔ {trip.endOdometer.toLocaleString('tr-TR')} km
+                        Araç: {trip.endOdometer.toLocaleString('tr-TR')} km
                       </span>
                     </div>
 

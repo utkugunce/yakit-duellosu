@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Trophy, Flame, TrendingDown, ArrowRight, Gauge, DollarSign,
   Fuel, Sparkles, Navigation2, CalendarDays
@@ -32,6 +32,17 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   const totalCarFuel = Math.round(trips.reduce((acc, t) => acc + t.fuelConsumed, 0) * 10) / 10;
   const totalCarCost = Math.round(trips.reduce((acc, t) => acc + t.fuelCost, 0));
   const carAvgConsumption = totalCarKm > 0 ? Math.round((totalCarFuel / totalCarKm) * 100 * 10) / 10 : 0;
+
+  const latestOdometer = useMemo(() => {
+    let maxOdo = 0;
+    for (const t of trips) {
+      if (t.endOdometer > maxOdo) maxOdo = t.endOdometer;
+    }
+    for (const r of refuels) {
+      if (r.odometer && r.odometer > maxOdo) maxOdo = r.odometer;
+    }
+    return maxOdo;
+  }, [trips, refuels]);
 
   // Refuel metrics from receipts
   const totalFuelPurchasedLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 10) / 10;
@@ -258,6 +269,11 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
           <div className="text-xl font-bold text-slate-900 dark:text-white">
             {totalCarKm.toLocaleString('tr-TR')} <span className="text-xs font-normal text-slate-400">km</span>
           </div>
+          {latestOdometer > 0 && (
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+              Araç: {latestOdometer.toLocaleString('tr-TR')} km
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -504,7 +520,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                         </span>
                       </div>
                       <span className="text-[11px] text-slate-400">
-                        {trip.distance} km • Sayaç: {trip.startOdometer} ➔ {trip.endOdometer} km
+                        {trip.distance} km • Araç: {trip.endOdometer.toLocaleString('tr-TR')} km
                       </span>
                     </div>
                   </div>

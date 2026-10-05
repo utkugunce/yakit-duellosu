@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CalendarDays, Calculator } from 'lucide-react';
+import { X, CalendarDays, Calculator, Gauge } from 'lucide-react';
 import { Driver, DailyLog, CarSettings } from '../../types';
 import { DRIVER_CONFIG } from '../../utils/duelAnalytics';
 
@@ -22,10 +22,9 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
 }) => {
   const [driver, setDriver] = useState<Driver>(settings.activeDriver);
   const [date, setDate] = useState<string>('');
-  const [inputMode, setInputMode] = useState<'odometer' | 'distance'>('odometer');
-  const [startOdo, setStartOdo] = useState<string>('');
-  const [endOdo, setEndOdo] = useState<string>('');
   const [distance, setDistance] = useState<string>('');
+  const [carOdometer, setCarOdometer] = useState<string>('');
+  const [baseOdometer, setBaseOdometer] = useState<number>(0);
   const [avgConsumption, setAvgConsumption] = useState<string>('6.5');
   const [fuelPrice, setFuelPrice] = useState<string>(settings.currentFuelPrice.toString());
   const [notes, setNotes] = useState<string>('');
@@ -35,9 +34,9 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
       if (editingTrip) {
         setDriver(editingTrip.driver);
         setDate(editingTrip.date.slice(0, 10));
-        setStartOdo(editingTrip.startOdometer.toString());
-        setEndOdo(editingTrip.endOdometer.toString());
+        setBaseOdometer(editingTrip.startOdometer);
         setDistance(editingTrip.distance.toString());
+        setCarOdometer(editingTrip.endOdometer.toString());
         setAvgConsumption(editingTrip.avgConsumption.toString());
         setFuelPrice(editingTrip.fuelPrice.toString());
         setNotes(editingTrip.notes || '');
@@ -46,24 +45,43 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
         setDate(today);
 
         setDriver(settings.activeDriver);
-        setStartOdo(lastOdometer > 0 ? lastOdometer.toString() : '45000');
-        setEndOdo('');
+        setBaseOdometer(lastOdometer);
         setDistance('');
+        setCarOdometer(lastOdometer > 0 ? lastOdometer.toString() : '');
         setAvgConsumption('6.5');
         setFuelPrice(settings.currentFuelPrice.toString());
         setNotes('');
-        setInputMode('odometer');
       }
     }
   }, [isOpen, editingTrip, lastOdometer, settings]);
 
-  // Sync distance and odometers
-  const numStart = parseFloat(startOdo) || 0;
-  const numEnd = parseFloat(endOdo) || 0;
-  const calculatedDistance = inputMode === 'odometer'
-    ? Math.max(0, Math.round((numEnd - numStart) * 10) / 10)
-    : parseFloat(distance) || 0;
+  const handleDistanceChange = (val: string) => {
+    setDistance(val);
+    const distNum = parseFloat(val);
+    if (!isNaN(distNum) && distNum >= 0) {
+      if (baseOdometer > 0) {
+        const newOdo = Math.round((baseOdometer + distNum) * 10) / 10;
+        setCarOdometer(newOdo.toString());
+      }
+    } else if (val === '') {
+      if (baseOdometer > 0) {
+        setCarOdometer(baseOdometer.toString());
+      }
+    }
+  };
 
+  const handleCarOdometerChange = (val: string) => {
+    setCarOdometer(val);
+    const odoNum = parseFloat(val);
+    if (!isNaN(odoNum)) {
+      if (baseOdometer > 0 && odoNum >= baseOdometer) {
+        const newDist = Math.round((odoNum - baseOdometer) * 10) / 10;
+        setDistance(newDist.toString());
+      }
+    }
+  };
+
+  const calculatedDistance = parseFloat(distance) || 0;
   const numConsumption = parseFloat(avgConsumption) || 0;
   const numPrice = parseFloat(fuelPrice) || settings.currentFuelPrice;
 
@@ -76,24 +94,25 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    let finalStart = numStart;
-    let finalEnd = numEnd;
-    let finalDist = calculatedDistance;
-
-    if (inputMode === 'distance') {
-      finalDist = parseFloat(distance) || 0;
-      finalStart = numStart;
-      finalEnd = numStart + finalDist;
-    } else {
-      if (numEnd <= numStart) {
-        alert('Gün sonu kilometresi gün başı kilometresinden büyük olmalıdır!');
-        return;
-      }
-    }
-
-    if (finalDist <= 0) {
+    const distNum = parseFloat(distance) || 0;
+    if (distNum <= 0) {
       alert('Lütfen bugün yapılan mesafeyi (KM) girin!');
       return;
+    }
+
+    let finalEnd = parseFloat(carOdometer) || 0;
+    if (finalEnd <= 0 && baseOdometer > 0) {
+      finalEnd = baseOdometer + distNum;
+    }
+
+    if (finalEnd <= 0) {
+      alert('Lütfen arabanın kaç kilometrede olduğunu girin!');
+      return;
+    }
+
+    let finalStart = baseOdometer > 0 ? baseOdometer : Math.max(0, finalEnd - distNum);
+    if (finalEnd < finalStart) {
+      finalStart = Math.max(0, finalEnd - distNum);
     }
 
     if (numConsumption <= 0) {
@@ -105,9 +124,9 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
       id: editingTrip ? editingTrip.id : `day-${Date.now()}`,
       driver,
       date,
-      startOdometer: finalStart,
-      endOdometer: finalEnd,
-      distance: finalDist,
+      startOdometer: Math.round(finalStart * 10) / 10,
+      endOdometer: Math.round(finalEnd * 10) / 10,
+      distance: Math.round(distNum * 10) / 10,
       avgConsumption: numConsumption,
       fuelPrice: numPrice,
       fuelConsumed,
@@ -199,80 +218,63 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
           {/* Kilometers / Distance Section */}
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Günün Kilometresi
-              </span>
-              <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setInputMode('odometer')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                    inputMode === 'odometer'
-                      ? 'bg-brand-500 text-white'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  Sayaç ile
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInputMode('distance')}
-                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
-                    inputMode === 'distance'
-                      ? 'bg-brand-500 text-white'
-                      : 'text-slate-600 dark:text-slate-400'
-                  }`}
-                >
-                  Direkt KM
-                </button>
+              <div className="flex items-center gap-1.5">
+                <Gauge className="w-4 h-4 text-brand-500" />
+                <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Kilometre & Mesafe
+                </span>
               </div>
+              {baseOdometer > 0 && (
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                  Önceki Araç: {baseOdometer.toLocaleString('tr-TR')} km
+                </span>
+              )}
             </div>
 
-            {inputMode === 'odometer' ? (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                    Gün Başı KM
-                  </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Direct Distance */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Bugün Yapılan Yol (Direkt KM) *
+                </label>
+                <div className="relative">
                   <input
                     type="number"
-                    step="any"
-                    value={startOdo}
-                    onChange={e => setStartOdo(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                    step="0.1"
+                    min="0.1"
+                    required
+                    value={distance}
+                    onChange={e => handleDistanceChange(e.target.value)}
+                    placeholder="Örn: 35.0"
+                    className="w-full px-3 py-2 pr-12 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
                   />
+                  <span className="absolute right-3 top-2 text-xs font-medium text-slate-400 pointer-events-none">
+                    km
+                  </span>
                 </div>
-                <div>
-                  <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                    Gün Sonu KM
-                  </label>
+              </div>
+
+              {/* Car Odometer */}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Arabanın Kilometresi (Araç Sayacı) *
+                </label>
+                <div className="relative">
                   <input
                     type="number"
                     step="any"
                     required
-                    value={endOdo}
-                    onChange={e => setEndOdo(e.target.value)}
-                    placeholder={startOdo ? (parseFloat(startOdo) + 35).toString() : '45135'}
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
+                    value={carOdometer}
+                    onChange={e => handleCarOdometerChange(e.target.value)}
+                    placeholder={baseOdometer > 0 ? (baseOdometer + 35).toString() : 'Örn: 45035'}
+                    className="w-full px-3 py-2 pr-12 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold text-brand-600 dark:text-brand-400"
                   />
+                  <span className="absolute right-3 top-2 text-xs font-medium text-slate-400 pointer-events-none">
+                    km
+                  </span>
                 </div>
               </div>
-            ) : (
-              <div>
-                <label className="block text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                  Bugün Yapılan Toplam Yol (KM)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  required
-                  value={distance}
-                  onChange={e => setDistance(e.target.value)}
-                  placeholder="Örn: 35.0"
-                  className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-medium"
-                />
-              </div>
-            )}
+            </div>
 
             <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-400">
               <span>Bugün Yapılan Mesafe:</span>
