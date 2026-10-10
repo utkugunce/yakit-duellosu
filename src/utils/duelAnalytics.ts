@@ -138,7 +138,7 @@ export function calculateDuel(logs: DailyLog[]): DuelComparison {
 export interface FunBadge {
   id: string;
   title: string;
-  type: 'champion' | 'record' | 'distance' | 'days';
+  type: 'champion' | 'record' | 'distance' | 'days' | 'speed';
   holder: Driver | 'none';
   detail: string;
 }
@@ -207,7 +207,35 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
         : 'Eşit mesafe',
   });
 
-  // 4. Direksiyon Başı Gün Sayısı
+  // 4. Hız Lideri (Ortalama Hız)
+  let speedHolder: Driver | 'none' = 'none';
+  let speedDetail = 'Hız kaydı yok';
+  if (utkuStats.avgSpeed && gozdeStats.avgSpeed) {
+    if (utkuStats.avgSpeed > gozdeStats.avgSpeed) {
+      speedHolder = 'utku';
+      speedDetail = `Ort. ${utkuStats.avgSpeed} km/h`;
+    } else if (gozdeStats.avgSpeed > utkuStats.avgSpeed) {
+      speedHolder = 'gozde';
+      speedDetail = `Ort. ${gozdeStats.avgSpeed} km/h`;
+    } else {
+      speedDetail = `Eşit (${utkuStats.avgSpeed} km/h)`;
+    }
+  } else if (utkuStats.avgSpeed) {
+    speedHolder = 'utku';
+    speedDetail = `Ort. ${utkuStats.avgSpeed} km/h`;
+  } else if (gozdeStats.avgSpeed) {
+    speedHolder = 'gozde';
+    speedDetail = `Ort. ${gozdeStats.avgSpeed} km/h`;
+  }
+  badges.push({
+    id: 'speed-master',
+    title: 'Hız Lideri',
+    type: 'speed',
+    holder: speedHolder,
+    detail: speedDetail,
+  });
+
+  // 5. Direksiyon Başı Gün Sayısı
   let daysHolder: Driver | 'none' = 'none';
   if (utkuStats.totalDays > gozdeStats.totalDays) {
     daysHolder = 'utku';
@@ -227,4 +255,138 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   });
 
   return badges;
+}
+
+export interface ExpenseShare {
+  utkuCost: number;
+  gozdeCost: number;
+  totalCost: number;
+  utkuPercentage: number;
+  gozdePercentage: number;
+  utkuDistance: number;
+  gozdeDistance: number;
+  totalDistance: number;
+  utkuDistancePct: number;
+  gozdeDistancePct: number;
+  differenceCost: number;
+  costPayerMore: Driver | 'tie';
+}
+
+export function calculateExpenseShare(logs: DailyLog[]): ExpenseShare {
+  const utkuStats = calculateDriverStats('utku', logs);
+  const gozdeStats = calculateDriverStats('gozde', logs);
+
+  const totalCost = utkuStats.totalFuelCost + gozdeStats.totalFuelCost;
+  const utkuPercentage = totalCost > 0 ? Math.round((utkuStats.totalFuelCost / totalCost) * 100) : 50;
+  const gozdePercentage = totalCost > 0 ? 100 - utkuPercentage : 50;
+
+  const totalDistance = utkuStats.totalDistance + gozdeStats.totalDistance;
+  const utkuDistancePct = totalDistance > 0 ? Math.round((utkuStats.totalDistance / totalDistance) * 100) : 50;
+  const gozdeDistancePct = totalDistance > 0 ? 100 - utkuDistancePct : 50;
+
+  const diff = Math.abs(utkuStats.totalFuelCost - gozdeStats.totalFuelCost);
+  const costPayerMore = utkuStats.totalFuelCost > gozdeStats.totalFuelCost
+    ? 'utku'
+    : gozdeStats.totalFuelCost > utkuStats.totalFuelCost
+    ? 'gozde'
+    : 'tie';
+
+  return {
+    utkuCost: utkuStats.totalFuelCost,
+    gozdeCost: gozdeStats.totalFuelCost,
+    totalCost,
+    utkuPercentage,
+    gozdePercentage,
+    utkuDistance: utkuStats.totalDistance,
+    gozdeDistance: gozdeStats.totalDistance,
+    totalDistance,
+    utkuDistancePct,
+    gozdeDistancePct,
+    differenceCost: Math.round(diff),
+    costPayerMore,
+  };
+}
+
+export interface WeekdayWeekendStats {
+  weekdayAvgConsumption: number;
+  weekendAvgConsumption: number;
+  weekdayDistance: number;
+  weekendDistance: number;
+  weekdayCost: number;
+  weekendCost: number;
+  weekdayCount: number;
+  weekendCount: number;
+}
+
+export function calculateWeekdayWeekendStats(logs: DailyLog[]): WeekdayWeekendStats {
+  let weekdayDist = 0;
+  let weekdayFuel = 0;
+  let weekdayCost = 0;
+  let weekdayCount = 0;
+
+  let weekendDist = 0;
+  let weekendFuel = 0;
+  let weekendCost = 0;
+  let weekendCount = 0;
+
+  for (const log of logs) {
+    const day = new Date(log.date).getDay(); // 0 is Sunday, 6 is Saturday
+    const isWeekend = day === 0 || day === 6;
+
+    if (isWeekend) {
+      weekendDist += log.distance;
+      weekendFuel += log.fuelConsumed;
+      weekendCost += log.fuelCost;
+      weekendCount++;
+    } else {
+      weekdayDist += log.distance;
+      weekdayFuel += log.fuelConsumed;
+      weekdayCost += log.fuelCost;
+      weekdayCount++;
+    }
+  }
+
+  const weekdayAvg = weekdayDist > 0 ? Math.round((weekdayFuel / weekdayDist) * 100 * 10) / 10 : 0;
+  const weekendAvg = weekendDist > 0 ? Math.round((weekendFuel / weekendDist) * 100 * 10) / 10 : 0;
+
+  return {
+    weekdayAvgConsumption: weekdayAvg,
+    weekendAvgConsumption: weekendAvg,
+    weekdayDistance: Math.round(weekdayDist * 10) / 10,
+    weekendDistance: Math.round(weekendDist * 10) / 10,
+    weekdayCost: Math.round(weekdayCost),
+    weekendCost: Math.round(weekendCost),
+    weekdayCount,
+    weekendCount,
+  };
+}
+
+export function calculatePotentialSavings(logs: DailyLog[], fuelPrice: number = 84.80): {
+  potentialLitersSaved: number;
+  potentialMoneySaved: number;
+  moreEconomicalDriver: Driver | 'tie';
+} {
+  const utkuStats = calculateDriverStats('utku', logs);
+  const gozdeStats = calculateDriverStats('gozde', logs);
+
+  if (utkuStats.totalDays === 0 || gozdeStats.totalDays === 0) {
+    return { potentialLitersSaved: 0, potentialMoneySaved: 0, moreEconomicalDriver: 'tie' };
+  }
+
+  const diffConsumption = Math.abs(utkuStats.avgConsumption - gozdeStats.avgConsumption);
+  if (diffConsumption < 0.05) {
+    return { potentialLitersSaved: 0, potentialMoneySaved: 0, moreEconomicalDriver: 'tie' };
+  }
+
+  const higherDriverStats = utkuStats.avgConsumption > gozdeStats.avgConsumption ? utkuStats : gozdeStats;
+  const moreEconomicalDriver: Driver = utkuStats.avgConsumption < gozdeStats.avgConsumption ? 'utku' : 'gozde';
+
+  const savedLiters = (higherDriverStats.totalDistance * diffConsumption) / 100;
+  const savedMoney = savedLiters * fuelPrice;
+
+  return {
+    potentialLitersSaved: Math.round(savedLiters * 10) / 10,
+    potentialMoneySaved: Math.round(savedMoney),
+    moreEconomicalDriver,
+  };
 }
