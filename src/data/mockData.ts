@@ -5,7 +5,7 @@ export const DEFAULT_CAR_SETTINGS: CarSettings = {
   plate: '34 GZ 1024',
   fuelType: 'benzin',
   tankCapacity: 45,
-  currentFuelPrice: 44.90,
+  currentFuelPrice: 84.80,
   activeDriver: 'utku',
   syncEnabled: false
 };

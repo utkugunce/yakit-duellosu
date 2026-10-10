@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, Edit2, CheckCircle2 } from 'lucide-react';
 import { FuelPurchaseRecord } from '../types';
+import { formatKm } from '../utils/duelAnalytics';
 
 interface RefuelsPageProps {
   refuels: FuelPurchaseRecord[];
@@ -130,7 +131,7 @@ export const RefuelsPage: React.FC<RefuelsPageProps> = ({
                       {refuel.odometer && refuel.odometer > 0 && (
                         <>
                           <span>•</span>
-                          <span>Sayaç: {refuel.odometer.toLocaleString('tr-TR')} km</span>
+                          <span>Sayaç: {formatKm(refuel.odometer)} km</span>
                         </>
                       )}
                       {refuel.fullTank && (

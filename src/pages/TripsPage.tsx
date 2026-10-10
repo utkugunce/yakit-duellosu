@@ -3,6 +3,7 @@ import {
   Search, Plus, Calendar, Trash2, Edit2, Gauge, X
 } from 'lucide-react';
 import { Driver, DailyLog } from '../types';
+import { formatKm } from '../utils/duelAnalytics';
 
 interface TripsPageProps {
   trips: DailyLog[];
@@ -188,10 +189,16 @@ export const TripsPage: React.FC<TripsPageProps> = ({
 
                     <div className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-neutral-800 dark:text-neutral-200">
-                        {trip.distance} km
+                        {formatKm(trip.distance)} km
                       </span>
                       <span>•</span>
-                      <span>{trip.startOdometer} ➔ {trip.endOdometer} km</span>
+                      <span>{formatKm(trip.startOdometer)} ➔ {formatKm(trip.endOdometer)} km</span>
+                      {trip.avgSpeed && trip.avgSpeed > 0 && (
+                        <>
+                          <span>•</span>
+                          <span className="text-neutral-700 dark:text-neutral-300 font-medium">{trip.avgSpeed} km/h</span>
+                        </>
+                      )}
                     </div>
 
                     {trip.notes && (

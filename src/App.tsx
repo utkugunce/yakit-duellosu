@@ -23,6 +23,7 @@ import { DuelDashboardPage } from './pages/DuelDashboardPage';
 import { TripsPage } from './pages/TripsPage';
 import { RefuelsPage } from './pages/RefuelsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { getEffectiveFuelPrice, formatKm } from './utils/duelAnalytics';
 
 function AppContent() {
   const { showToast } = useToast();
@@ -95,6 +96,11 @@ function AppContent() {
     return maxOdo;
   }, [trips, refuels]);
 
+  // Compute effective fuel price (from latest refuel or fallback 84.80)
+  const effectiveFuelPrice = useMemo(() => {
+    return getEffectiveFuelPrice(refuels, settings.currentFuelPrice || 84.80);
+  }, [refuels, settings.currentFuelPrice]);
+
   // Automatic Supabase Hydration & Realtime Subscription
   useEffect(() => {
     const { url, key } = getSupabaseConfig(settings);
@@ -157,7 +163,7 @@ function AppContent() {
       showToast('Günün kaydı güncellendi!', 'success');
     } else {
       nextTrips = [trip, ...trips];
-      showToast(`Günün kaydı eklendi (${trip.distance} km, ${trip.avgConsumption} L/100km)`, 'success');
+      showToast(`Günün kaydı eklendi (${formatKm(trip.distance)} km, ${trip.avgConsumption} L/100km)`, 'success');
     }
     updateTrips(nextTrips);
     setEditingTrip(null);
@@ -372,6 +378,7 @@ function AppContent() {
         editingTrip={editingTrip}
         lastOdometer={lastOdometer}
         settings={settings}
+        effectiveFuelPrice={effectiveFuelPrice}
       />
 
       {/* Fuel Purchase Modal */}

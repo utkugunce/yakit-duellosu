@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Car, Cloud, Database, Download, Upload, RefreshCw,
+  Cloud, Database, Download, Upload, RefreshCw,
   Check, Copy, ChevronDown, ChevronUp, AlertCircle
 } from 'lucide-react';
 import { CarSettings, TripRecord, FuelPurchaseRecord } from '../types';
@@ -42,12 +42,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   }>({ status: 'idle' });
 
   const hasCloudSync = isSupabaseConfigured(settings);
-
-  const handleSaveCarSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    onUpdateSettings(formData);
-    showToast('Araç ayarları kaydedildi!', 'success');
-  };
 
   const handleTestConnection = async () => {
     setTestingStatus({ status: 'testing' });
@@ -133,94 +127,57 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
     <div className="space-y-4 animate-fade-in pb-12">
       <div>
         <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
-          Ayarlar & Yönetim
+          Ayarlar & Veri
         </h2>
         <p className="text-xs text-neutral-400 dark:text-neutral-500">
-          Araç konfigürasyonu, bulut eşitleme ve veri yedekleme
+          Bulut senkronizasyonu ve veri yönetimi
         </p>
       </div>
 
-      {/* 1. Vehicle & Pump Defaults */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3.5">
-        <div className="flex items-center gap-2">
-          <Car className="w-4 h-4 text-neutral-500" />
-          <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
-            Araç & Yakıt Bilgileri
-          </h3>
-        </div>
-
-        <form onSubmit={handleSaveCarSettings} className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-                Araç Adı / Modeli
-              </label>
-              <input
-                type="text"
-                value={formData.carName}
-                onChange={e => setFormData({ ...formData, carName: e.target.value })}
-                placeholder="Örn: Renault Clio"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
-              />
+      {/* Cloud Sync Status / Configuration */}
+      {hasCloudSync ? (
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+                Bulut Senkronizasyonu
+              </h3>
             </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-                Plaka
-              </label>
-              <input
-                type="text"
-                value={formData.plate}
-                onChange={e => setFormData({ ...formData, plate: e.target.value })}
-                placeholder="34 GZ 1024"
-                className="w-full px-3 py-2 text-xs font-mono uppercase rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-                Yakıt Türü
-              </label>
-              <select
-                value={formData.fuelType}
-                onChange={e => setFormData({ ...formData, fuelType: e.target.value as any })}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none font-medium"
-              >
-                <option value="benzin">Benzin</option>
-                <option value="dizel">Dizel</option>
-                <option value="lpg">LPG</option>
-                <option value="hibrit">Hibrit</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-                Güncel Pompa Fiyatı (TL/L)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.currentFuelPrice}
-                onChange={e => setFormData({ ...formData, currentFuelPrice: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
-              />
-            </div>
+            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Aktif & Canlı
+            </span>
           </div>
 
-          <div className="flex justify-end pt-1">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            Utku ve Gözde'nin kayıtları Supabase bulutunda ortak olarak anlık eşitlenmektedir.
+          </p>
+
+          <div className="flex items-center gap-2 pt-1">
             <button
-              type="submit"
-              className="px-4 py-2 text-xs font-semibold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 rounded-xl shadow-xs hover:opacity-90 active:scale-98 transition-all"
+              type="button"
+              onClick={onSyncUpload}
+              disabled={isSyncing}
+              className="px-3 py-1.5 text-xs font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1"
             >
-              Araç Bilgilerini Kaydet
+              <Upload className="w-3 h-3" />
+              <span>Buluta Yükle</span>
+            </button>
+            <button
+              type="button"
+              onClick={onSyncDownload}
+              disabled={isSyncing}
+              className="px-3 py-1.5 text-xs font-medium rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center gap-1"
+            >
+              <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>Buluttan İndir</span>
             </button>
           </div>
-        </form>
-      </div>
-
-      {/* 2. Cloud Sync (Supabase) */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3.5">
-        <div className="flex items-center justify-between">
+        </div>
+      ) : (
+        /* Only shown if Supabase is NOT yet configured */
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3.5">
           <div className="flex items-center gap-2">
             <Cloud className="w-4 h-4 text-emerald-500" />
             <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
@@ -228,58 +185,48 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
             </h3>
           </div>
 
-          {hasCloudSync && (
-            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Aktif & Canlı
-            </span>
-          )}
-        </div>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            Ortak araç havuzunu anlık senkronize etmek için Supabase bilgilerinizi girin.
+          </p>
 
-        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-          Utku ve Gözde'nin telefonları arasında ortak araç havuzunu anlık senkronize eder.
-        </p>
-
-        {/* Inputs */}
-        <div className="space-y-2.5">
-          <div>
-            <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-              Supabase Project URL
-            </label>
-            <input
-              type="text"
-              value={formData.supabaseUrl || ''}
-              onChange={e => setFormData({ ...formData, supabaseUrl: e.target.value })}
-              placeholder="https://xyz.supabase.co"
-              className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
-              Supabase Anon Public API Key
-            </label>
-            <input
-              type="password"
-              value={formData.supabaseKey || ''}
-              onChange={e => setFormData({ ...formData, supabaseKey: e.target.value })}
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
-            />
-          </div>
-
-          {testingStatus.status !== 'idle' && (
-            <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
-              testingStatus.status === 'success'
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200'
-                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200'
-            }`}>
-              <span>{testingStatus.message}</span>
+          <div className="space-y-2.5">
+            <div>
+              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                Supabase Project URL
+              </label>
+              <input
+                type="text"
+                value={formData.supabaseUrl || ''}
+                onChange={e => setFormData({ ...formData, supabaseUrl: e.target.value })}
+                placeholder="https://xyz.supabase.co"
+                className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
+              />
             </div>
-          )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-            <div className="flex items-center gap-2">
+            <div>
+              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                Supabase Anon Public API Key
+              </label>
+              <input
+                type="password"
+                value={formData.supabaseKey || ''}
+                onChange={e => setFormData({ ...formData, supabaseKey: e.target.value })}
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
+              />
+            </div>
+
+            {testingStatus.status !== 'idle' && (
+              <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+                testingStatus.status === 'success'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200'
+                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200'
+              }`}>
+                <span>{testingStatus.message}</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => {
@@ -301,62 +248,40 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
                 <span>Test Et</span>
               </button>
             </div>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onSyncUpload}
-                disabled={isSyncing}
-                className="px-3 py-1.5 text-xs font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1"
-              >
-                <Upload className="w-3 h-3" />
-                <span>Buluta Yükle</span>
-              </button>
-              <button
-                type="button"
-                onClick={onSyncDownload}
-                disabled={isSyncing}
-                className="px-3 py-1.5 text-xs font-medium rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center gap-1"
-              >
-                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span>Buluttan İndir</span>
-              </button>
-            </div>
+          <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+            <button
+              type="button"
+              onClick={() => setIsSqlExpanded(!isSqlExpanded)}
+              className="w-full flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 py-1"
+            >
+              <span>Supabase SQL Tablo Kodu</span>
+              {isSqlExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+
+            {isSqlExpanded && (
+              <div className="mt-2 p-3 rounded-xl bg-neutral-900 text-neutral-200 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-neutral-400">Tek sefer çalıştırın:</span>
+                  <button
+                    onClick={handleCopySql}
+                    className="px-2 py-0.5 text-[10px] bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded flex items-center gap-1"
+                  >
+                    {copiedSql ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedSql ? 'Kopyalandı' : 'Kodu Kopyala'}</span>
+                  </button>
+                </div>
+                <pre className="text-[10px] font-mono bg-black/40 p-2 rounded-lg overflow-x-auto text-emerald-400">
+                  {sqlCode}
+                </pre>
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        {/* Collapsible SQL Schema block */}
-        <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
-          <button
-            type="button"
-            onClick={() => setIsSqlExpanded(!isSqlExpanded)}
-            className="w-full flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 py-1"
-          >
-            <span>Supabase SQL Tablo Kodu</span>
-            {isSqlExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-
-          {isSqlExpanded && (
-            <div className="mt-2 p-3 rounded-xl bg-neutral-900 text-neutral-200 text-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-neutral-400">Tek sefer çalıştırın:</span>
-                <button
-                  onClick={handleCopySql}
-                  className="px-2 py-0.5 text-[10px] bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded flex items-center gap-1"
-                >
-                  {copiedSql ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedSql ? 'Kopyalandı' : 'Kodu Kopyala'}</span>
-                </button>
-              </div>
-              <pre className="text-[10px] font-mono bg-black/40 p-2 rounded-lg overflow-x-auto text-emerald-400">
-                {sqlCode}
-              </pre>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 3. Data Backup & Reset */}
+      {/* Data Backup & Reset */}
       <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3.5">
         <div className="flex items-center gap-2">
           <Database className="w-4 h-4 text-neutral-500" />

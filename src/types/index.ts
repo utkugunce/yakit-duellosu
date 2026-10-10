@@ -8,6 +8,7 @@ export interface DailyLog {
   endOdometer: number; // Gün sonu KM
   distance: number; // O gün yapılan mesafe (km)
   avgConsumption: number; // Yol bilgisayarı gün sonu ortalaması (L/100km)
+  avgSpeed?: number; // Yol bilgisayarı gün sonu ortalama hızı (km/h) (opsiyonel)
   fuelPrice: number; // Benzin litre fiyatı (TL/L)
   fuelConsumed: number; // O gün harcanan yakıt: (distance * avgConsumption) / 100
   fuelCost: number; // O günkü yakıt masrafı: fuelConsumed * fuelPrice
@@ -56,6 +57,7 @@ export interface DriverStats {
   totalFuelCost: number; // Toplam yakıt bedeli (TL)
   avgConsumption: number; // Ortalama L/100km
   avgCostPerKm: number; // Ortalama TL/km
+  avgSpeed?: number; // Ortalama hız (km/h)
   bestConsumption: number; // En ekonomik günün tüketimi
   highestConsumption: number; // En yüksek günün tüketimi
 }

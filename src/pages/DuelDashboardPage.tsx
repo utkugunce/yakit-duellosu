@@ -10,7 +10,7 @@ import {
 import { DailyLog, FuelPurchaseRecord } from '../types';
 import {
   calculateDuel, calculateFunBadges,
-  DRIVER_CONFIG
+  DRIVER_CONFIG, formatKm
 } from '../utils/duelAnalytics';
 
 interface DuelDashboardPageProps {
@@ -110,7 +110,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
               </div>
 
               <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1 truncate">
-                {duel.utkuStats.totalDays} gün • {duel.utkuStats.totalDistance} km
+                {duel.utkuStats.totalDays} gün • {formatKm(duel.utkuStats.totalDistance)} km{duel.utkuStats.avgSpeed ? ` • ${duel.utkuStats.avgSpeed} km/h` : ''}
               </div>
             </div>
 
@@ -142,7 +142,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
               </div>
 
               <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1 truncate">
-                {duel.gozdeStats.totalDays} gün • {duel.gozdeStats.totalDistance} km
+                {duel.gozdeStats.totalDays} gün • {formatKm(duel.gozdeStats.totalDistance)} km{duel.gozdeStats.avgSpeed ? ` • ${duel.gozdeStats.avgSpeed} km/h` : ''}
               </div>
             </div>
           </div>
@@ -183,7 +183,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
           </span>
           <div className="flex items-baseline gap-1">
             <span className="text-lg sm:text-xl font-bold font-mono text-neutral-900 dark:text-white tabular-nums">
-              {totalCarKm}
+              {formatKm(totalCarKm)}
             </span>
             <span className="text-xs text-neutral-400 font-mono">km</span>
           </div>
@@ -340,7 +340,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                         </span>
                       </div>
                       <span className="text-[11px] font-mono text-neutral-400 block truncate">
-                        {trip.distance} km • {trip.startOdometer} ➔ {trip.endOdometer} km
+                        {formatKm(trip.distance)} km{trip.avgSpeed ? ` (${trip.avgSpeed} km/h)` : ''} • {formatKm(trip.startOdometer)} ➔ {formatKm(trip.endOdometer)} km
                       </span>
                     </div>
                   </div>

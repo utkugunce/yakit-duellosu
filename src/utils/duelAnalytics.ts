@@ -1,4 +1,4 @@
-import { Driver, DailyLog, DriverStats, DuelComparison } from '../types';
+import { Driver, DailyLog, DriverStats, DuelComparison, FuelPurchaseRecord } from '../types';
 
 export const DRIVER_CONFIG = {
   utku: {
@@ -21,6 +21,31 @@ export const DRIVER_CONFIG = {
   }
 };
 
+/**
+ * Format km values to always have exactly 1 decimal digit (e.g. 42.5 km, 45100.0 km)
+ */
+export function formatKm(val?: number): string {
+  if (val === undefined || val === null || isNaN(val)) return '0.0';
+  return (Math.round(val * 10) / 10).toFixed(1);
+}
+
+/**
+ * Determine the active pump fuel price.
+ * Uses the latest refuel receipt's pricePerLiter, or fallback to 84.80.
+ */
+export function getEffectiveFuelPrice(
+  refuels: FuelPurchaseRecord[],
+  defaultPrice: number = 84.80
+): number {
+  if (!refuels || refuels.length === 0) return defaultPrice;
+  const sorted = [...refuels].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const latest = sorted[0];
+  if (latest && latest.pricePerLiter && latest.pricePerLiter > 0) {
+    return latest.pricePerLiter;
+  }
+  return defaultPrice;
+}
+
 export function calculateDriverStats(
   driver: Driver,
   logs: DailyLog[]
@@ -34,16 +59,25 @@ export function calculateDriverStats(
   let bestConsumption = Infinity;
   let highestConsumption = 0;
 
+  let speedSum = 0;
+  let speedCount = 0;
+
   for (const t of driverLogs) {
     totalDistance += t.distance;
     totalFuelConsumed += t.fuelConsumed;
     totalFuelCost += t.fuelCost;
     if (t.avgConsumption < bestConsumption) bestConsumption = t.avgConsumption;
     if (t.avgConsumption > highestConsumption) highestConsumption = t.avgConsumption;
+
+    if (t.avgSpeed && t.avgSpeed > 0) {
+      speedSum += t.avgSpeed;
+      speedCount++;
+    }
   }
 
   const avgConsumption = totalDistance > 0 ? (totalFuelConsumed / totalDistance) * 100 : 0;
   const avgCostPerKm = totalDistance > 0 ? totalFuelCost / totalDistance : 0;
+  const avgSpeed = speedCount > 0 ? Math.round(speedSum / speedCount) : undefined;
 
   return {
     driver,
@@ -56,6 +90,7 @@ export function calculateDriverStats(
     totalFuelCost: Math.round(totalFuelCost * 100) / 100,
     avgConsumption: Math.round(avgConsumption * 100) / 100,
     avgCostPerKm: Math.round(avgCostPerKm * 100) / 100,
+    avgSpeed,
     bestConsumption: bestConsumption === Infinity ? 0 : bestConsumption,
     highestConsumption,
   };
@@ -139,12 +174,10 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   // 2. En Düşük Tüketim Rekoru
   let bestDayDriver: Driver | 'none' = 'none';
   let lowestLiters = Infinity;
-  let bestDate = '';
   for (const t of logs) {
     if (t.avgConsumption < lowestLiters) {
       lowestLiters = t.avgConsumption;
       bestDayDriver = t.driver;
-      bestDate = t.date;
     }
   }
   badges.push({
@@ -168,9 +201,9 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
     type: 'distance',
     holder: kmHolder,
     detail: kmHolder === 'utku'
-      ? `${utkuStats.totalDistance} km`
+      ? `${formatKm(utkuStats.totalDistance)} km`
       : kmHolder === 'gozde'
-        ? `${gozdeStats.totalDistance} km`
+        ? `${formatKm(gozdeStats.totalDistance)} km`
         : 'Eşit mesafe',
   });
 
