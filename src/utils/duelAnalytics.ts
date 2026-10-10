@@ -3,19 +3,21 @@ import { Driver, DailyLog, DriverStats, DuelComparison } from '../types';
 export const DRIVER_CONFIG = {
   utku: {
     name: 'Utku',
-    avatar: '👨‍💻',
+    initial: 'U',
+    avatar: 'U',
     color: '#0284c7', // Sky-600
-    badgeClass: 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border-sky-300 dark:border-sky-800',
+    badgeClass: 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800',
     accentClass: 'from-sky-500 to-blue-600',
     lightBg: 'bg-sky-50 dark:bg-sky-950/30',
   },
   gozde: {
     name: 'Gözde',
-    avatar: '👩‍💼',
-    color: '#db2777', // Pink-600
-    badgeClass: 'bg-pink-100 text-pink-800 dark:bg-pink-950/60 dark:text-pink-300 border-pink-300 dark:border-pink-800',
-    accentClass: 'from-pink-500 to-rose-600',
-    lightBg: 'bg-pink-50 dark:bg-pink-950/30',
+    initial: 'G',
+    avatar: 'G',
+    color: '#e11d48', // Rose-600
+    badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+    accentClass: 'from-rose-500 to-pink-600',
+    lightBg: 'bg-rose-50 dark:bg-rose-950/30',
   }
 };
 
@@ -101,7 +103,7 @@ export function calculateDuel(logs: DailyLog[]): DuelComparison {
 export interface FunBadge {
   id: string;
   title: string;
-  icon: string;
+  type: 'champion' | 'record' | 'distance' | 'days';
   holder: Driver | 'none';
   detail: string;
 }
@@ -114,27 +116,27 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
 
   const badges: FunBadge[] = [];
 
-  // 1. Tasarruf Şampiyonu
+  // 1. Tasarruf Lideri
   let championHolder: Driver | 'none' = 'none';
   let championDetail = 'Henüz yeterli veri yok';
   if (utkuStats.totalDays > 0 && gozdeStats.totalDays > 0) {
     if (utkuStats.avgConsumption < gozdeStats.avgConsumption) {
       championHolder = 'utku';
-      championDetail = `Ortalama ${utkuStats.avgConsumption} L/100km ile lider!`;
+      championDetail = `Ortalama ${utkuStats.avgConsumption} L/100km`;
     } else {
       championHolder = 'gozde';
-      championDetail = `Ortalama ${gozdeStats.avgConsumption} L/100km ile lider!`;
+      championDetail = `Ortalama ${gozdeStats.avgConsumption} L/100km`;
     }
   }
   badges.push({
     id: 'eco-champion',
-    title: 'Tasarruf Şampiyonu',
-    icon: '🏆',
+    title: 'Tasarruf Lideri',
+    type: 'champion',
     holder: championHolder,
     detail: championDetail,
   });
 
-  // 2. En Ekonomik Gün Rekoru
+  // 2. En Düşük Tüketim Rekoru
   let bestDayDriver: Driver | 'none' = 'none';
   let lowestLiters = Infinity;
   let bestDate = '';
@@ -147,13 +149,13 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   }
   badges.push({
     id: 'record-trip',
-    title: 'Rekor Gün Sonu',
-    icon: '⭐',
+    title: 'Rekor Gün',
+    type: 'record',
     holder: bestDayDriver,
-    detail: bestDayDriver !== 'none' ? `${lowestLiters} L/100km (${bestDate})` : 'Henüz kayıt yok',
+    detail: bestDayDriver !== 'none' ? `${lowestLiters} L/100km` : 'Henüz kayıt yok',
   });
 
-  // 3. Kilometre Kaşifi
+  // 3. Mesafe Lideri
   let kmHolder: Driver | 'none' = 'none';
   if (utkuStats.totalDistance > gozdeStats.totalDistance && utkuStats.totalDistance > 0) {
     kmHolder = 'utku';
@@ -162,13 +164,13 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   }
   badges.push({
     id: 'road-master',
-    title: 'Kilometre Kaşifi',
-    icon: '🛣️',
+    title: 'Mesafe Lideri',
+    type: 'distance',
     holder: kmHolder,
     detail: kmHolder === 'utku'
-      ? `Utku: ${utkuStats.totalDistance} km sürdü`
+      ? `${utkuStats.totalDistance} km`
       : kmHolder === 'gozde'
-        ? `Gözde: ${gozdeStats.totalDistance} km sürdü`
+        ? `${gozdeStats.totalDistance} km`
         : 'Eşit mesafe',
   });
 
@@ -182,13 +184,13 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   badges.push({
     id: 'days-master',
     title: 'En Çok Kullanan',
-    icon: '📅',
+    type: 'days',
     holder: daysHolder,
     detail: daysHolder === 'utku'
-      ? `Utku ${utkuStats.totalDays} gün arabayı kullandı`
+      ? `${utkuStats.totalDays} gün`
       : daysHolder === 'gozde'
-        ? `Gözde ${gozdeStats.totalDays} gün arabayı kullandı`
-        : 'Günler eşit paylaşıldı',
+        ? `${gozdeStats.totalDays} gün`
+        : 'Eşit',
   });
 
   return badges;

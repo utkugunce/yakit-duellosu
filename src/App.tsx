@@ -300,10 +300,14 @@ function AppContent() {
           setEditingTrip(null);
           setIsTripModalOpen(true);
         }}
+        onOpenFuelModal={() => {
+          setEditingRefuel(null);
+          setIsFuelModalOpen(true);
+        }}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-3.5 sm:px-4 py-4 sm:py-6 pb-28 md:pb-8">
+      <main className="flex-1 max-w-3xl w-full mx-auto px-3.5 sm:px-4 pt-3 pb-24 md:pb-12">
         {activeTab === 'duel' && (
           <DuelDashboardPage
             trips={trips}

@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import {
-  Settings, Car, Cloud, Database, Download, Upload, RefreshCw,
-  Plus, X, Check, Copy, ExternalLink, HelpCircle, AlertTriangle
+  Car, Cloud, Database, Download, Upload, RefreshCw,
+  Check, Copy, ChevronDown, ChevronUp, AlertCircle
 } from 'lucide-react';
 import { CarSettings, TripRecord, FuelPurchaseRecord } from '../types';
-import { DEFAULT_CAR_SETTINGS } from '../data/mockData';
 import { exportAllDataAsJSON, importAllDataFromJSON } from '../lib/storage';
 import { testSupabaseConnection, isSupabaseConfigured } from '../lib/supabaseSync';
 import { useToast } from '../components/common/Toast';
@@ -35,11 +34,55 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const { showToast } = useToast();
   const [formData, setFormData] = useState<CarSettings>({ ...settings });
   const [copiedSql, setCopiedSql] = useState(false);
+  const [isSqlExpanded, setIsSqlExpanded] = useState(false);
+
+  const [testingStatus, setTestingStatus] = useState<{
+    status: 'idle' | 'testing' | 'success' | 'warning' | 'error';
+    message?: string;
+  }>({ status: 'idle' });
+
+  const hasCloudSync = isSupabaseConfigured(settings);
 
   const handleSaveCarSettings = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateSettings(formData);
-    showToast('Araç ayarları başarıyla kaydedildi!', 'success');
+    showToast('Araç ayarları kaydedildi!', 'success');
+  };
+
+  const handleTestConnection = async () => {
+    setTestingStatus({ status: 'testing' });
+    const res = await testSupabaseConnection(formData.supabaseUrl, formData.supabaseKey);
+    if (res.connected && res.tableExists) {
+      setTestingStatus({ status: 'success', message: res.message });
+      showToast('Supabase bağlantısı ve tablo başarılı!', 'success');
+    } else if (res.connected && !res.tableExists) {
+      setTestingStatus({ status: 'warning', message: res.message });
+      showToast(res.message, 'warning');
+    } else {
+      setTestingStatus({ status: 'error', message: res.message });
+      showToast(res.message, 'error');
+    }
+  };
+
+  const sqlCode = `-- Supabase SQL Editor'da tek sefer çalıştırın (New Query -> Run):
+CREATE TABLE IF NOT EXISTS yakit_duellosu (
+  room_id TEXT PRIMARY KEY,
+  trips_json TEXT,
+  refuels_json TEXT,
+  settings_json TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE yakit_duellosu ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow all access" ON yakit_duellosu;
+CREATE POLICY "Allow all access" ON yakit_duellosu FOR ALL USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(sqlCode);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 2000);
+    showToast('SQL kodu kopyalandı!', 'success');
   };
 
   const handleExportJSON = () => {
@@ -69,7 +112,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           onUpdateSettings({ ...settings, ...imported.settings });
           setFormData({ ...settings, ...imported.settings });
         }
-        showToast(`Başarıyla ${imported.trips.length} sürüş ve ${imported.refuels.length} yakıt alımı içe aktarıldı!`, 'success');
+        showToast(`${imported.trips.length} gün ve ${imported.refuels.length} fiş geri yüklendi!`, 'success');
       } catch (err: any) {
         showToast(err?.message || 'Geçersiz JSON dosyası', 'error');
       }
@@ -79,121 +122,69 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   };
 
   const handleClearAllData = () => {
-    if (window.confirm('TÜM sürüş ve yakıt alım kayıtları silinecek! Devam etmek istiyor musunuz?')) {
+    if (window.confirm('TÜM sürüş ve yakıt kayıtları silinecek! Devam etmek istiyor musunuz?')) {
       onSetTrips([]);
       onSetRefuels([]);
       showToast('Tüm veriler temizlendi.', 'info');
     }
   };
 
-  const [testingStatus, setTestingStatus] = useState<{
-    status: 'idle' | 'testing' | 'success' | 'warning' | 'error';
-    message?: string;
-  }>({ status: 'idle' });
-
-  const handleTestConnection = async () => {
-    setTestingStatus({ status: 'testing' });
-    const res = await testSupabaseConnection(formData.supabaseUrl, formData.supabaseKey);
-    if (res.connected && res.tableExists) {
-      setTestingStatus({ status: 'success', message: res.message });
-      showToast('Supabase bağlantısı ve tablo başarılı!', 'success');
-    } else if (res.connected && !res.tableExists) {
-      setTestingStatus({ status: 'warning', message: res.message });
-      showToast(res.message, 'warning');
-    } else {
-      setTestingStatus({ status: 'error', message: res.message });
-      showToast(res.message, 'error');
-    }
-  };
-
-  const sqlCode = `-- Supabase SQL Editor'da tek sefer çalıştırın (New Query -> Run):
-CREATE TABLE IF NOT EXISTS yakit_duellosu (
-  room_id TEXT PRIMARY KEY,
-  trips_json TEXT,
-  refuels_json TEXT,
-  settings_json TEXT,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
--- Okuma ve yazmaya izin verin (Anonim erişim):
-ALTER TABLE yakit_duellosu ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Allow all access" ON yakit_duellosu;
-CREATE POLICY "Allow all access" ON yakit_duellosu FOR ALL USING (true) WITH CHECK (true);
-
--- Canlı anlık eşitleme (Realtime) desteğini açın:
-ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
-
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(sqlCode);
-    setCopiedSql(true);
-    setTimeout(() => setCopiedSql(false), 2000);
-    showToast('SQL şeması kopyalandı!', 'success');
-  };
-
   return (
-    <div className="space-y-6 animate-fade-in pb-12 max-w-4xl mx-auto">
-      {/* Title */}
+    <div className="space-y-4 animate-fade-in pb-12">
       <div>
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-          Uygulama & Araç Ayarları
+        <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+          Ayarlar & Yönetim
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Ortak araç yapılandırması, bulut eşitleme ve veri yönetimi
+        <p className="text-xs text-neutral-400 dark:text-neutral-500">
+          Araç konfigürasyonu, bulut eşitleme ve veri yedekleme
         </p>
       </div>
 
-      {/* 1. Car & Default Fuel Settings */}
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      {/* 1. Vehicle & Pump Defaults */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3.5">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400">
-            <Car className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Araç & Yakıt Bilgileri
-            </h3>
-            <p className="text-xs text-slate-500">
-              Formlarda otomatik doldurulan araç varsayılanları
-            </p>
-          </div>
+          <Car className="w-4 h-4 text-neutral-500" />
+          <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+            Araç & Yakıt Bilgileri
+          </h3>
         </div>
 
-        <form onSubmit={handleSaveCarSettings} className="space-y-4 pt-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSaveCarSettings} className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
                 Araç Adı / Modeli
               </label>
               <input
                 type="text"
                 value={formData.carName}
                 onChange={e => setFormData({ ...formData, carName: e.target.value })}
-                placeholder="Örn: Bizim Araba / Clio 1.0"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                placeholder="Örn: Renault Clio"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
                 Plaka
               </label>
               <input
                 type="text"
                 value={formData.plate}
                 onChange={e => setFormData({ ...formData, plate: e.target.value })}
-                placeholder="Örn: 34 GZ 1024"
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white uppercase"
+                placeholder="34 GZ 1024"
+                className="w-full px-3 py-2 text-xs font-mono uppercase rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
                 Yakıt Türü
               </label>
               <select
                 value={formData.fuelType}
                 onChange={e => setFormData({ ...formData, fuelType: e.target.value as any })}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none font-medium"
               >
                 <option value="benzin">Benzin</option>
                 <option value="dizel">Dizel</option>
@@ -203,23 +194,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Güncel Benzin Litre Fiyatı (TL/L)
+              <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                Güncel Pompa Fiyatı (TL/L)
               </label>
               <input
                 type="number"
                 step="0.01"
                 value={formData.currentFuelPrice}
                 onChange={e => setFormData({ ...formData, currentFuelPrice: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                className="w-full px-3 py-2 text-xs font-mono font-bold rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
               />
             </div>
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end pt-1">
             <button
               type="submit"
-              className="px-4 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-sm transition-all"
+              className="px-4 py-2 text-xs font-semibold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 rounded-xl shadow-xs hover:opacity-90 active:scale-98 transition-all"
             >
               Araç Bilgilerini Kaydet
             </button>
@@ -227,64 +218,45 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
         </form>
       </div>
 
-      {/* 2. Cloud Sync (Supabase for Utku & Gözde) */}
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <Cloud className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                İki Telefon Arasında Eşitleme (Supabase)
-              </h3>
-              <p className="text-xs text-slate-500">
-                Utku ve Gözde'nin kendi telefonlarından ortak arabaya sürüş girebilmesi için ücretsiz bulut senkronizasyonu
-              </p>
-            </div>
+      {/* 2. Cloud Sync (Supabase) */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Cloud className="w-4 h-4 text-emerald-500" />
+            <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+              Bulut Senkronizasyonu (Supabase)
+            </h3>
           </div>
 
-          <a
-            href="https://supabase.com"
-            target="_blank"
-            rel="noreferrer"
-            className="text-[11px] text-brand-600 dark:text-brand-400 flex items-center gap-1 hover:underline shrink-0"
-          >
-            <span>Supabase'e Git</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
+          {hasCloudSync && (
+            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Aktif & Canlı
+            </span>
+          )}
         </div>
 
-        <div className="p-3.5 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 text-xs text-blue-900 dark:text-blue-200 space-y-1.5">
-          <p className="font-semibold flex items-center gap-1.5">
-            <HelpCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <span>Nasıl Kurulur? (Sadece 1 Dakika):</span>
-          </p>
-          <ol className="list-decimal list-inside space-y-1 text-[11px] text-blue-800 dark:text-blue-300">
-            <li>Ücretsiz bir <strong>Supabase</strong> projesi oluşturun.</li>
-            <li>Supabase SQL Editor'a aşağıdaki tek satırlık tablo kodunu yapıştırıp "Run"a basın.</li>
-            <li>Supabase ayarlarından aldığınız <strong>Project URL</strong> ve <strong>anon Public Key</strong>'i buraya veya Netlify ortam değişkenlerine (<code>VITE_SUPABASE_URL</code>) girin.</li>
-            <li>Artık ikinizin girdiği tüm sürüşler otomatik olarak ortak havuzda senkronize olur!</li>
-          </ol>
-        </div>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          Utku ve Gözde'nin telefonları arasında ortak araç havuzunu anlık senkronize eder.
+        </p>
 
         {/* Inputs */}
-        <div className="space-y-3 pt-1">
+        <div className="space-y-2.5">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
               Supabase Project URL
             </label>
             <input
               type="text"
               value={formData.supabaseUrl || ''}
               onChange={e => setFormData({ ...formData, supabaseUrl: e.target.value })}
-              placeholder="https://xyzabcdef.supabase.co"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              placeholder="https://xyz.supabase.co"
+              className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+            <label className="block text-[11px] font-medium text-neutral-500 dark:text-neutral-400 mb-1">
               Supabase Anon Public API Key
             </label>
             <input
@@ -292,50 +264,41 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
               value={formData.supabaseKey || ''}
               onChange={e => setFormData({ ...formData, supabaseKey: e.target.value })}
               placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200/80 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
             />
           </div>
 
-          {/* Status Message */}
           {testingStatus.status !== 'idle' && (
             <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
               testingStatus.status === 'success'
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                : testingStatus.status === 'warning'
-                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-                : testingStatus.status === 'testing'
-                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
-                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200'
+                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200'
             }`}>
-              {testingStatus.status === 'testing' && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-              {testingStatus.status === 'success' && <Check className="w-3.5 h-3.5 text-emerald-500" />}
-              {testingStatus.status === 'warning' && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
-              {testingStatus.status === 'error' && <X className="w-3.5 h-3.5 text-rose-500" />}
-              <span>{testingStatus.message || 'Bağlantı kontrol ediliyor...'}</span>
+              <span>{testingStatus.message}</span>
             </div>
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   onUpdateSettings(formData);
-                  showToast('Supabase anahtarları kaydedildi!', 'success');
+                  showToast('Anahtarlar kaydedildi!', 'success');
                 }}
-                className="px-4 py-2 text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl transition-colors hover:bg-slate-800 dark:hover:bg-slate-100"
+                className="px-3.5 py-1.5 text-xs font-semibold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 rounded-xl"
               >
-                Anahtarları Kaydet
+                Kaydet
               </button>
 
               <button
                 type="button"
                 onClick={handleTestConnection}
                 disabled={testingStatus.status === 'testing'}
-                className="px-3 py-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${testingStatus.status === 'testing' ? 'animate-spin' : ''}`} />
-                <span>Bağlantıyı Test Et</span>
+                <RefreshCw className={`w-3 h-3 ${testingStatus.status === 'testing' ? 'animate-spin' : ''}`} />
+                <span>Test Et</span>
               </button>
             </div>
 
@@ -344,71 +307,76 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
                 type="button"
                 onClick={onSyncUpload}
                 disabled={isSyncing}
-                className="px-3.5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
+                className="px-3 py-1.5 text-xs font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1"
               >
-                <Upload className="w-3.5 h-3.5" />
+                <Upload className="w-3 h-3" />
                 <span>Buluta Yükle</span>
               </button>
               <button
                 type="button"
                 onClick={onSyncDownload}
                 disabled={isSyncing}
-                className="px-3.5 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
+                className="px-3 py-1.5 text-xs font-medium rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors flex items-center gap-1"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
                 <span>Buluttan İndir</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* SQL Schema helper box */}
-        <div className="mt-3 p-3 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 text-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono text-slate-400">Supabase SQL Tablo Kodu:</span>
-            <button
-              onClick={handleCopySql}
-              className="px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded flex items-center gap-1"
-            >
-              {copiedSql ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-              <span>{copiedSql ? 'Kopyalandı' : 'Kodu Kopyala'}</span>
-            </button>
-          </div>
-          <pre className="text-[10px] font-mono bg-black/40 p-2.5 rounded-lg overflow-x-auto text-emerald-400">
-            {sqlCode}
-          </pre>
+        {/* Collapsible SQL Schema block */}
+        <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+          <button
+            type="button"
+            onClick={() => setIsSqlExpanded(!isSqlExpanded)}
+            className="w-full flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 py-1"
+          >
+            <span>Supabase SQL Tablo Kodu</span>
+            {isSqlExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+
+          {isSqlExpanded && (
+            <div className="mt-2 p-3 rounded-xl bg-neutral-900 text-neutral-200 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-neutral-400">Tek sefer çalıştırın:</span>
+                <button
+                  onClick={handleCopySql}
+                  className="px-2 py-0.5 text-[10px] bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded flex items-center gap-1"
+                >
+                  {copiedSql ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedSql ? 'Kopyalandı' : 'Kodu Kopyala'}</span>
+                </button>
+              </div>
+              <pre className="text-[10px] font-mono bg-black/40 p-2 rounded-lg overflow-x-auto text-emerald-400">
+                {sqlCode}
+              </pre>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 4. Data Backup & Reset */}
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+      {/* 3. Data Backup & Reset */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 shadow-xs space-y-3.5">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-            <Database className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Veri Yedekleme ve Yönetim
-            </h3>
-            <p className="text-xs text-slate-500">
-              Sürüş kayıtlarınızı JSON olarak indirin, yükleyin veya sıfırlayın
-            </p>
-          </div>
+          <Database className="w-4 h-4 text-neutral-500" />
+          <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+            Veri Yedekleme & Sıfırlama
+          </h3>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          {/* Export JSON */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <button
+            type="button"
             onClick={handleExportJSON}
-            className="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+            className="flex items-center justify-center gap-2 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 transition-colors"
           >
-            <Download className="w-4 h-4 text-brand-500" />
-            <span>Tüm Verileri İndir (JSON Yedek)</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Tüm Verileri İndir (JSON)</span>
           </button>
 
-          {/* Import JSON */}
-          <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors cursor-pointer">
-            <Upload className="w-4 h-4 text-emerald-500" />
+          <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer">
+            <Upload className="w-3.5 h-3.5" />
             <span>Yedekten Geri Yükle (JSON)</span>
             <input
               type="file"
@@ -418,25 +386,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
             />
           </label>
 
-          {/* Reset All */}
           <button
+            type="button"
             onClick={handleClearAllData}
             className="sm:col-span-2 flex items-center justify-center gap-2 p-3 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold text-rose-600 dark:text-rose-400 transition-colors"
           >
-            <AlertTriangle className="w-4 h-4 text-rose-500" />
+            <AlertCircle className="w-3.5 h-3.5" />
             <span>Tüm Kayıtları Temizle</span>
           </button>
-        </div>
-      </div>
-
-      {/* 5. Netlify Deployment Note */}
-      <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 flex items-start gap-3">
-        <ExternalLink className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-bold text-slate-800 dark:text-slate-200">Netlify Dağıtımı Hakkında:</span>
-          <p className="mt-0.5 text-[11px]">
-            Bu proje Netlify ile %100 uyumlu olarak hazırlanmıştır (<code>netlify.toml</code> ve <code>_redirects</code> dahil). Projeyi GitHub reponuza push edip Netlify'a bağladığınızda 1 dakikada yayına alabilirsiniz.
-          </p>
         </div>
       </div>
     </div>

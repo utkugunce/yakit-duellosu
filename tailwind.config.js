@@ -9,37 +9,61 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
         },
         utku: {
-          light: '#e0f2fe',
+          light: '#f0f9ff',
           DEFAULT: '#0284c7',
           dark: '#0369a1',
           border: '#38bdf8',
         },
         gozde: {
-          light: '#fdf2f8',
-          DEFAULT: '#db2777',
-          dark: '#be185d',
-          border: '#f472b6',
+          light: '#fff1f2',
+          DEFAULT: '#e11d48',
+          dark: '#be123c',
+          border: '#fb7185',
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: [
+          'SF Pro Display',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Inter',
+          'Segoe UI',
+          'Roboto',
+          'sans-serif'
+        ],
+        mono: [
+          'SF Mono',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          'ui-monospace',
+          'monospace'
+        ]
+      },
+      spacing: {
+        'safe-bottom': 'env(safe-area-inset-bottom, 16px)',
+        'safe-top': 'env(safe-area-inset-top, 0px)',
       },
       keyframes: {
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(12px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        sheetUp: {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
         },
         fadeIn: {
           '0%': { opacity: '0' },
@@ -47,8 +71,9 @@ export default {
         },
       },
       animation: {
-        'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
-        'fade-in': 'fadeIn 0.25s ease-out both',
+        'slide-up': 'slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'sheet-up': 'sheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) both',
+        'fade-in': 'fadeIn 0.2s ease-out both',
       }
     },
   },

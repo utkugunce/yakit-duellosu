@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Fuel, Receipt, CheckCircle2, Building2 } from 'lucide-react';
+import { X, Fuel, Receipt, Check, ArrowRight } from 'lucide-react';
 import { FuelPurchaseRecord, CarSettings } from '../../types';
 
-const POPULAR_STATIONS = ['Shell', 'Opet', 'BP', 'Petrol Ofisi', 'Total', 'TP'];
+const POPULAR_STATIONS = ['Shell', 'Opet', 'Petrol Ofisi', 'BP', 'Total', 'Diğer'];
 
 interface AddFuelModalProps {
   isOpen: boolean;
@@ -61,7 +61,8 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
     }
   }, [isOpen, editingRefuel, lastOdometer, settings]);
 
-  // When Liters changes, update Total based on price
+  if (!isOpen) return null;
+
   const handleLitersChange = (val: string) => {
     setLiters(val);
     const numL = parseFloat(val);
@@ -71,7 +72,6 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
     }
   };
 
-  // When Total Amount changes (directly from receipt), calculate Liters or Price
   const handleTotalChange = (val: string) => {
     setTotalAmount(val);
     const numT = parseFloat(val);
@@ -80,16 +80,13 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
 
     if (!isNaN(numT) && numT > 0) {
       if (!isNaN(numL) && numL > 0) {
-        // If liters already entered, calculate exact price per liter on receipt
         setPricePerLiter((Math.round((numT / numL) * 100) / 100).toFixed(2));
       } else if (!isNaN(numP) && numP > 0) {
-        // If price known, calculate liters
         setLiters((Math.round((numT / numP) * 100) / 100).toFixed(2));
       }
     }
   };
 
-  // When Price per liter changes
   const handlePriceChange = (val: string) => {
     setPricePerLiter(val);
     const numL = parseFloat(liters);
@@ -99,37 +96,34 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const numL = parseFloat(liters);
-    const numT = parseFloat(totalAmount);
-    const numP = parseFloat(pricePerLiter) || (numT / numL);
-    const numOdo = parseFloat(odometer) || undefined;
+    const numLiters = parseFloat(liters) || 0;
+    const numTotal = parseFloat(totalAmount) || 0;
+    const numPrice = parseFloat(pricePerLiter) || 0;
 
-    if (isNaN(numL) || numL <= 0) {
-      alert('Lütfen fişte yazan yakıt miktarını (Litre) girin!');
+    if (numLiters <= 0) {
+      alert('Lütfen fişteki alınan yakıt miktarını (Litre) girin!');
       return;
     }
 
-    if (isNaN(numT) || numT <= 0) {
-      alert('Lütfen fişte yazan toplam tutarı (TL) girin!');
+    if (numTotal <= 0) {
+      alert('Lütfen fişteki toplam tutarı (TL) girin!');
       return;
     }
 
     const refuel: FuelPurchaseRecord = {
       id: editingRefuel ? editingRefuel.id : `fuel-${Date.now()}`,
       date,
-      liters: Math.round(numL * 100) / 100,
-      totalAmount: Math.round(numT * 100) / 100,
-      pricePerLiter: Math.round(numP * 100) / 100,
-      station: station.trim() || 'Benzinlik',
-      odometer: numOdo,
+      liters: numLiters,
+      totalAmount: numTotal,
+      pricePerLiter: numPrice > 0 ? numPrice : Math.round((numTotal / numLiters) * 100) / 100,
+      station: station.trim() || undefined,
+      odometer: odometer ? parseFloat(odometer) : undefined,
       fullTank,
-      notes: notes.trim(),
-      createdAt: editingRefuel ? editingRefuel.createdAt : new Date().toISOString(),
+      notes: notes.trim() || undefined,
+      createdAt: editingRefuel?.createdAt || new Date().toISOString(),
     };
 
     onSave(refuel);
@@ -137,196 +131,195 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative w-full sm:max-w-lg bg-white dark:bg-neutral-900 rounded-t-[28px] sm:rounded-2xl shadow-2xl border border-neutral-200/80 dark:border-neutral-800 flex flex-col max-h-[92vh] sm:max-h-[85vh] overflow-hidden animate-sheet-up sm:animate-slide-up z-10">
+        {/* Mobile Swipe Handle */}
+        <div className="sm:hidden pt-2.5 pb-1 flex justify-center">
+          <div className="w-10 h-1 rounded-full bg-neutral-300 dark:bg-neutral-700" />
+        </div>
+
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-emerald-50/60 dark:bg-emerald-950/30">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Receipt className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                {editingRefuel ? 'Benzin Fişini Düzenle' : 'Benzin Fişi Kaydet'}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Fişteki litre, toplam tutar ve istasyon bilgilerini girin
-              </p>
-            </div>
+        <div className="px-5 py-3.5 border-b border-neutral-200/80 dark:border-neutral-800/80 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+              {editingRefuel ? 'Fiş Kaydını Düzenle' : 'Benzin Fişi Kaydet'}
+            </h2>
+            <p className="text-xs text-neutral-400 dark:text-neutral-500">
+              Fişte yazan litre ve tutarı girin
+            </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[82vh] overflow-y-auto">
-          {/* Main Receipt Inputs (Liters & Total TL) */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 space-y-3.5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {/* Liters */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Alınan Benzin (Litre)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.1"
-                    required
-                    value={liters}
-                    onChange={e => handleLitersChange(e.target.value)}
-                    placeholder="Örn: 35.50"
-                    className="w-full px-3.5 py-2.5 pr-10 text-base font-extrabold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400">L</span>
-                </div>
-              </div>
-
-              {/* Total TL */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Toplam Tutar (TL)
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    required
-                    value={totalAmount}
-                    onChange={e => handleTotalChange(e.target.value)}
-                    placeholder="Örn: 1590.00"
-                    className="w-full px-3.5 py-2.5 pr-10 text-base font-extrabold rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                  <span className="absolute right-3.5 top-2.5 text-sm font-bold text-emerald-600 dark:text-emerald-400">₺</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Litre Price calculated / display */}
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-medium">
-                Pompa Litre Fiyatı:
-              </span>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  step="0.01"
-                  value={pricePerLiter}
-                  onChange={e => handlePriceChange(e.target.value)}
-                  className="w-24 px-2 py-1 text-xs font-bold text-right rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200"
-                />
-                <span className="text-slate-400 font-medium">TL/L</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Station Selection */}
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1 pb-safe">
+          {/* Station Chips */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" />
-              <span>Benzin İstasyonu / Marka</span>
+            <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1.5">
+              İstasyon
             </label>
-            <input
-              type="text"
-              value={station}
-              onChange={e => setStation(e.target.value)}
-              placeholder="Örn: Shell"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white mb-2"
-            />
             <div className="flex flex-wrap gap-1.5">
-              {POPULAR_STATIONS.map(s => (
+              {POPULAR_STATIONS.map(st => (
                 <button
-                  key={s}
+                  key={st}
                   type="button"
-                  onClick={() => setStation(s)}
-                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${
-                    station === s
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 text-emerald-700 dark:text-emerald-300 font-semibold'
-                      : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                  onClick={() => setStation(st)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                    station === st
+                      ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-semibold shadow-xs'
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
                   }`}
                 >
-                  {s}
+                  {st}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Date and KM */}
+          {/* Liters & Total Amount side-by-side */}
+          <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-800 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Alınan Yakıt (Litre) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    required
+                    value={liters}
+                    onChange={e => handleLitersChange(e.target.value)}
+                    placeholder="35.5"
+                    className="w-full px-3.5 py-2.5 text-base font-bold font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white outline-none focus:border-neutral-900 dark:focus:border-white"
+                  />
+                  <span className="absolute right-3.5 top-3 text-xs font-mono text-neutral-400">L</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Ödenen Tutar (TL) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    inputMode="decimal"
+                    required
+                    value={totalAmount}
+                    onChange={e => handleTotalChange(e.target.value)}
+                    placeholder="1500"
+                    className="w-full px-3.5 py-2.5 text-base font-bold font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white outline-none focus:border-neutral-900 dark:focus:border-white"
+                  />
+                  <span className="absolute right-3.5 top-3 text-xs font-mono text-neutral-400">₺</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Pump Unit Price */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                  Litre Pompa Fiyatı
+                </span>
+                <span className="text-[11px] font-mono text-neutral-400">TL / L</span>
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                inputMode="decimal"
+                value={pricePerLiter}
+                onChange={e => handlePriceChange(e.target.value)}
+                placeholder="44.90"
+                className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Date & Current Odometer */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Fiş Tarihi ve Saati
+              <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                Tarih & Saat
               </label>
               <input
                 type="datetime-local"
+                required
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white outline-none font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Alım Anındaki Araç KM (Opsiyonel)
+              <label className="block text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-1">
+                Sayaç Kilometresi (Opsiyonel)
               </label>
               <input
                 type="number"
-                step="any"
+                inputMode="numeric"
                 value={odometer}
                 onChange={e => setOdometer(e.target.value)}
-                placeholder={lastOdometer > 0 ? lastOdometer.toString() : 'Örn: 45450'}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                placeholder="Örn: 45200"
+                className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/60 text-neutral-900 dark:text-white outline-none"
               />
             </div>
           </div>
 
-          {/* Full tank toggle */}
-          <div className="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-            <input
-              type="checkbox"
-              id="fullTankToggle"
-              checked={fullTank}
-              onChange={e => setFullTank(e.target.checked)}
-              className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700"
-            />
-            <label htmlFor="fullTankToggle" className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
-              <span className="font-semibold">Depo fulllendi (Tabanca attı)</span>
-            </label>
+          {/* Full Tank Toggle */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200/80 dark:border-neutral-800">
+            <div>
+              <span className="text-xs font-semibold text-neutral-900 dark:text-white block">
+                Tam Depo Dolduruldu mu?
+              </span>
+              <span className="text-[11px] text-neutral-400">
+                Depo kapağı atana kadar doldurulduysa seçin
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFullTank(!fullTank)}
+              className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
+                fullTank ? 'bg-emerald-600' : 'bg-neutral-300 dark:bg-neutral-700'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform transform ${
+                  fullTank ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
           </div>
 
-          {/* Notes / Receipt No */}
+          {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Fiş No / Not (Opsiyonel)
-            </label>
             <input
               type="text"
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Örn: Fiş no: 0142 veya kredi kartı fişi"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+              placeholder="Fiş no veya not (opsiyonel)"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50 text-neutral-900 dark:text-white outline-none"
             />
           </div>
 
-          {/* Action buttons */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-200 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-            >
-              İptal
-            </button>
+          {/* Submit Button */}
+          <div className="pt-2">
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-600/30 transition-all hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-semibold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-md hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-1.5"
             >
-              {editingRefuel ? 'Değişiklikleri Kaydet' : 'Benzin Fişini Kaydet'}
+              <span>{editingRefuel ? 'Fiş Kaydını Güncelle' : 'Fişi Kaydet'}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </form>

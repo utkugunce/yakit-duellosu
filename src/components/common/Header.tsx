@@ -1,7 +1,6 @@
 import React from 'react';
-import { Fuel, Plus, Sun, Moon, Cloud, RefreshCw, Car } from 'lucide-react';
+import { Sun, Moon, Cloud, RefreshCw, Car } from 'lucide-react';
 import { Driver, CarSettings } from '../../types';
-import { DRIVER_CONFIG } from '../../utils/duelAnalytics';
 import { isSupabaseConfigured } from '../../lib/supabaseSync';
 
 interface HeaderProps {
@@ -29,104 +28,85 @@ export const Header: React.FC<HeaderProps> = ({
   const hasCloudSync = isSupabaseConfigured(settings);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
-      <div className="max-w-6xl mx-auto px-3.5 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
-        {/* Logo and Car Info */}
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <div className="bg-gradient-to-tr from-brand-600 to-indigo-600 text-white p-2 sm:p-2.5 rounded-xl shadow-md shadow-brand-500/20 flex items-center justify-center shrink-0">
-            <Fuel className="w-4 h-4 sm:w-5 sm:h-5" />
+    <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-white/85 dark:bg-[#09090b]/85 border-b border-neutral-200/80 dark:border-neutral-800/80 transition-colors">
+      <div className="max-w-4xl mx-auto px-4 h-14 sm:h-16 flex items-center justify-between gap-3">
+        {/* Left: Brand & Car Plate */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shrink-0 shadow-sm">
+            <span className="font-mono text-xs font-bold tracking-tighter">YD</span>
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-tight truncate">
+
+          <div className="flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs sm:text-sm font-semibold tracking-tight text-neutral-900 dark:text-white truncate">
                 Yakıt Düellosu
-              </h1>
-              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 whitespace-nowrap">
-                <Car className="w-3 h-3 mr-1 text-slate-400" />
-                {settings.plate || settings.carName}
               </span>
+              {hasCloudSync && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"
+                  title="Supabase Bulut Senkronizasyonu Aktif"
+                />
+              )}
             </div>
-            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
-              Utku & Gözde • Tüketim Takibi
-            </p>
+
+            <span className="text-[11px] font-mono text-neutral-400 dark:text-neutral-500 truncate flex items-center gap-1">
+              <Car className="w-3 h-3 text-neutral-400 shrink-0" />
+              <span>{settings.plate || settings.carName}</span>
+            </span>
           </div>
         </div>
 
-        {/* Center / Right controls */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Active Driver Switcher Pill */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 sm:p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+        {/* Right: Driver Toggle & Quick Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* iOS Segmented Driver Pill */}
+          <div className="inline-flex p-0.5 rounded-xl bg-neutral-200/70 dark:bg-neutral-800/80 border border-neutral-300/40 dark:border-neutral-700/40">
             <button
+              type="button"
               onClick={() => onSelectDriver('utku')}
-              className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-[10px] text-xs font-medium transition-all ${
                 activeDriver === 'utku'
-                  ? 'bg-sky-500 text-white shadow-sm shadow-sky-500/30'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-neutral-900 text-sky-600 dark:text-sky-400 shadow-sm font-semibold'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
-              title="Aktif sürücüyü Utku yap"
             >
-              <span className="text-sm sm:text-base">{DRIVER_CONFIG.utku.avatar}</span>
-              <span className="hidden xs:inline">Utku</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" />
+              <span>Utku</span>
             </button>
             <button
+              type="button"
               onClick={() => onSelectDriver('gozde')}
-              className={`flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-[10px] text-xs font-medium transition-all ${
                 activeDriver === 'gozde'
-                  ? 'bg-pink-500 text-white shadow-sm shadow-pink-500/30'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-white dark:bg-neutral-900 text-rose-600 dark:text-rose-400 shadow-sm font-semibold'
+                  : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
               }`}
-              title="Aktif sürücüyü Gözde yap"
             >
-              <span className="text-sm sm:text-base">{DRIVER_CONFIG.gozde.avatar}</span>
-              <span className="hidden xs:inline">Gözde</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+              <span>Gözde</span>
             </button>
           </div>
 
-          {/* Quick Action Buttons (Desktop) */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={onOpenFuelModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
-            >
-              <Fuel className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Benzin Fişi</span>
-            </button>
-
-            <button
-              onClick={onOpenTripModal}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-sm shadow-brand-600/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Gün Kaydet</span>
-            </button>
-          </div>
-
-          {/* Cloud Sync Status / Button */}
+          {/* Cloud Sync trigger */}
           {hasCloudSync && (
             <button
+              type="button"
               onClick={onSync}
               disabled={isSyncing}
-              className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-brand-400 dark:hover:bg-slate-800 transition-colors relative"
-              title={settings.lastSyncTime ? `Son Eşitleme: ${new Date(settings.lastSyncTime).toLocaleTimeString('tr-TR')}` : 'Bulut Eşitle'}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
+              title="Bulut Verilerini Eşitle"
             >
-              {isSyncing ? (
-                <RefreshCw className="w-4 h-4 animate-spin text-brand-600" />
-              ) : (
-                <>
-                  <Cloud className="w-4 h-4 text-emerald-500" />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                </>
-              )}
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-emerald-500' : ''}`} />
             </button>
           )}
 
-          {/* Theme Toggle */}
+          {/* Theme Switcher */}
           <button
+            type="button"
             onClick={onToggleTheme}
-            className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800/60 transition-colors"
             title={isDarkMode ? 'Açık Mod' : 'Karanlık Mod'}
           >
-            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
+            {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-neutral-600" />}
           </button>
         </div>
       </div>
