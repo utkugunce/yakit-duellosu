@@ -32,7 +32,12 @@ export function loadSettingsFromStorage(): CarSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     if (!raw) return DEFAULT_CAR_SETTINGS;
-    return { ...DEFAULT_CAR_SETTINGS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    const settings = { ...DEFAULT_CAR_SETTINGS, ...parsed };
+    if (!settings.currentFuelPrice || settings.currentFuelPrice < 60) {
+      settings.currentFuelPrice = 84.80;
+    }
+    return settings;
   } catch (err) {
     console.error('Failed to load settings:', err);
     return DEFAULT_CAR_SETTINGS;

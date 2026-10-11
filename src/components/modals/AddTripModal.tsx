@@ -28,7 +28,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
     ? lastOdometer
     : 45000;
 
-  const defaultFuelPrice = effectiveFuelPrice || settings.currentFuelPrice || 84.80;
+  const defaultFuelPrice = effectiveFuelPrice || 84.80;
 
   const [driver, setDriver] = useState<Driver>(settings.activeDriver);
   const [date, setDate] = useState<string>('');

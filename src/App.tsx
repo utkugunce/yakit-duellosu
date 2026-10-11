@@ -96,10 +96,10 @@ function AppContent() {
     return maxOdo;
   }, [trips, refuels]);
 
-  // Compute effective fuel price (from latest refuel or fallback 84.80)
+  // Compute effective fuel price (from latest refuel or fallback 84.80 until new refuel is added)
   const effectiveFuelPrice = useMemo(() => {
-    return getEffectiveFuelPrice(refuels, settings.currentFuelPrice || 84.80);
-  }, [refuels, settings.currentFuelPrice]);
+    return getEffectiveFuelPrice(refuels, 84.80);
+  }, [refuels]);
 
   // Automatic Supabase Hydration & Realtime Subscription
   useEffect(() => {
@@ -392,6 +392,7 @@ function AppContent() {
         editingRefuel={editingRefuel}
         lastOdometer={lastOdometer}
         settings={settings}
+        effectiveFuelPrice={effectiveFuelPrice}
       />
     </div>
   );

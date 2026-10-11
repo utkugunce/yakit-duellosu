@@ -11,6 +11,7 @@ interface AddFuelModalProps {
   editingRefuel?: FuelPurchaseRecord | null;
   lastOdometer: number;
   settings: CarSettings;
+  effectiveFuelPrice?: number;
 }
 
 export const AddFuelModal: React.FC<AddFuelModalProps> = ({
@@ -20,11 +21,14 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
   editingRefuel,
   lastOdometer,
   settings,
+  effectiveFuelPrice,
 }) => {
+  const activeDefaultPrice = effectiveFuelPrice || settings.currentFuelPrice || 84.80;
+
   const [date, setDate] = useState<string>('');
   const [liters, setLiters] = useState<string>('');
   const [totalAmount, setTotalAmount] = useState<string>('');
-  const [pricePerLiter, setPricePerLiter] = useState<string>(settings.currentFuelPrice.toString());
+  const [pricePerLiter, setPricePerLiter] = useState<string>(activeDefaultPrice.toFixed(2));
   const [station, setStation] = useState<string>('Shell');
   const [odometer, setOdometer] = useState<string>('');
   const [fullTank, setFullTank] = useState<boolean>(true);
@@ -52,14 +56,14 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
 
         setLiters('');
         setTotalAmount('');
-        setPricePerLiter(settings.currentFuelPrice.toString());
+        setPricePerLiter(activeDefaultPrice.toFixed(2));
         setStation('Shell');
         setOdometer(lastOdometer > 0 ? lastOdometer.toString() : '');
         setFullTank(true);
         setNotes('');
       }
     }
-  }, [isOpen, editingRefuel, lastOdometer, settings]);
+  }, [isOpen, editingRefuel, lastOdometer, settings, activeDefaultPrice]);
 
   if (!isOpen) return null;
 
@@ -240,7 +244,7 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
                 inputMode="decimal"
                 value={pricePerLiter}
                 onChange={e => handlePriceChange(e.target.value)}
-                placeholder="44.90"
+                placeholder={activeDefaultPrice.toFixed(2)}
                 className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white outline-none"
               />
             </div>
