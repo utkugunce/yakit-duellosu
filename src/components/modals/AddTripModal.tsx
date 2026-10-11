@@ -28,15 +28,16 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
     ? lastOdometer
     : 45000;
 
+  const defaultFuelPrice = effectiveFuelPrice || settings.currentFuelPrice || 84.80;
+
   const [driver, setDriver] = useState<Driver>(settings.activeDriver);
   const [date, setDate] = useState<string>('');
   const [distance, setDistance] = useState<string>('');
   const [carOdometer, setCarOdometer] = useState<string>('');
   const [avgConsumption, setAvgConsumption] = useState<string>('6.5');
   const [avgSpeed, setAvgSpeed] = useState<string>('');
+  const [fuelPrice, setFuelPrice] = useState<string>(defaultFuelPrice.toString());
   const [notes, setNotes] = useState<string>('');
-
-  const activeFuelPrice = editingTrip?.fuelPrice || effectiveFuelPrice || settings.currentFuelPrice || 84.80;
 
   useEffect(() => {
     if (isOpen) {
@@ -47,6 +48,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
         setCarOdometer(editingTrip.endOdometer.toString());
         setAvgConsumption(editingTrip.avgConsumption.toString());
         setAvgSpeed(editingTrip.avgSpeed ? editingTrip.avgSpeed.toString() : '');
+        setFuelPrice((editingTrip.fuelPrice && editingTrip.fuelPrice > 0 ? editingTrip.fuelPrice : defaultFuelPrice).toString());
         setNotes(editingTrip.notes || '');
       } else {
         const today = new Date().toISOString().slice(0, 10);
@@ -56,10 +58,11 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
         setCarOdometer('');
         setAvgConsumption('6.5');
         setAvgSpeed('');
+        setFuelPrice(defaultFuelPrice.toString());
         setNotes('');
       }
     }
-  }, [isOpen, editingTrip, lastOdometer, settings]);
+  }, [isOpen, editingTrip, lastOdometer, settings, defaultFuelPrice]);
 
   if (!isOpen) return null;
 
@@ -82,6 +85,8 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
   const calculatedDistance = parseFloat(distance) || 0;
   const numConsumption = parseFloat(avgConsumption) || 0;
   const numSpeed = avgSpeed ? parseFloat(avgSpeed) : undefined;
+  const parsedFuelPrice = parseFloat(fuelPrice);
+  const activeFuelPrice = !isNaN(parsedFuelPrice) && parsedFuelPrice > 0 ? parsedFuelPrice : defaultFuelPrice;
 
   const fuelConsumed = Math.round(((calculatedDistance * numConsumption) / 100) * 100) / 100;
   const fuelCost = Math.round(fuelConsumed * activeFuelPrice * 100) / 100;
@@ -97,6 +102,11 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
 
     if (numConsumption <= 0) {
       alert('Lütfen gün sonu ortalama tüketimini girin (L/100km)!');
+      return;
+    }
+
+    if (isNaN(parsedFuelPrice) || parsedFuelPrice <= 0) {
+      alert('Lütfen geçerli bir yakıt litre fiyatı (₺/L) girin!');
       return;
     }
 
@@ -277,6 +287,56 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
                 />
                 <span className="absolute right-2 top-2 text-[10px] font-mono text-neutral-400">km/h</span>
               </div>
+            </div>
+          </div>
+
+          {/* Fuel Price Row */}
+          <div className="grid grid-cols-2 gap-2 items-end">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+                  Yakıt Fiyatı (₺/L) *
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  required
+                  value={fuelPrice}
+                  onChange={e => setFuelPrice(e.target.value)}
+                  placeholder={defaultFuelPrice.toFixed(2)}
+                  className="w-full pl-3 pr-9 py-2 text-xs font-bold font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white outline-none focus:border-neutral-900 dark:focus:border-white"
+                />
+                <span className="absolute right-2.5 top-2 text-[10px] font-mono text-neutral-400">₺/L</span>
+              </div>
+            </div>
+
+            <div className="pb-0.5">
+              {editingTrip && editingTrip.fuelPrice && Math.abs(activeFuelPrice - editingTrip.fuelPrice) > 0.01 ? (
+                <button
+                  type="button"
+                  onClick={() => setFuelPrice(editingTrip.fuelPrice.toFixed(2))}
+                  className="w-full py-2 px-2 rounded-xl border border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/80 text-[11px] text-neutral-700 dark:text-neutral-300 font-medium text-center hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  title="Kayıttaki orijinal fiyata geri dön"
+                >
+                  Kayıtlı Fiyat ({editingTrip.fuelPrice.toFixed(2)} ₺)
+                </button>
+              ) : defaultFuelPrice > 0 && Math.abs(activeFuelPrice - defaultFuelPrice) > 0.01 ? (
+                <button
+                  type="button"
+                  onClick={() => setFuelPrice(defaultFuelPrice.toFixed(2))}
+                  className="w-full py-2 px-2.5 rounded-xl border border-dashed border-sky-300 dark:border-sky-800 bg-sky-50/60 dark:bg-sky-950/30 text-[11px] text-sky-700 dark:text-sky-300 font-medium text-center hover:bg-sky-100/60 transition-colors"
+                  title="Güncel pompa fiyatına güncelle"
+                >
+                  Pompa: {defaultFuelPrice.toFixed(2)} ₺
+                </button>
+              ) : (
+                <div className="py-2 px-2.5 rounded-xl bg-neutral-100/70 dark:bg-neutral-800/60 text-[11px] text-neutral-500 dark:text-neutral-400 text-center font-medium truncate">
+                  {editingTrip ? 'Kayıt Fiyatı' : 'Güncel Pompa Fiyatı'}
+                </div>
+              )}
             </div>
           </div>
 

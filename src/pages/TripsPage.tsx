@@ -220,6 +220,11 @@ export const TripsPage: React.FC<TripsPageProps> = ({
                     <div className="text-[11px] font-mono text-neutral-400">
                       {trip.fuelConsumed} L • <span className="text-neutral-700 dark:text-neutral-200 font-semibold">{trip.fuelCost.toLocaleString('tr-TR')} ₺</span>
                     </div>
+                    {trip.fuelPrice && trip.fuelPrice > 0 && (
+                      <div className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">
+                        {trip.fuelPrice.toFixed(2)} ₺/L
+                      </div>
+                    )}
 
                     {/* Edit & Delete row */}
                     <div className="flex items-center justify-end gap-1.5 mt-2">
