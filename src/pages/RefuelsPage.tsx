@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, Edit2, CheckCircle2 } from 'lucide-react';
 import { FuelPurchaseRecord } from '../types';
-import { formatKm } from '../utils/duelAnalytics';
+import { formatKm, formatLiters } from '../utils/duelAnalytics';
 
 interface RefuelsPageProps {
   refuels: FuelPurchaseRecord[];
@@ -17,7 +17,7 @@ export const RefuelsPage: React.FC<RefuelsPageProps> = ({
   onDeleteRefuel,
 }) => {
   const totalSpent = Math.round(refuels.reduce((acc, r) => acc + r.totalAmount, 0));
-  const totalLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 10) / 10;
+  const totalLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 100) / 100;
   const avgPricePerLiter = totalLiters > 0 ? (Math.round((totalSpent / totalLiters) * 100) / 100).toFixed(2) : '0';
 
   const sortedRefuels = [...refuels].sort(
@@ -55,7 +55,7 @@ export const RefuelsPage: React.FC<RefuelsPageProps> = ({
           </span>
           <div className="flex items-baseline gap-1">
             <span className="text-base sm:text-lg font-bold font-mono text-neutral-900 dark:text-white tabular-nums">
-              {totalLiters}
+              {formatLiters(totalLiters)}
             </span>
             <span className="text-[11px] font-mono text-neutral-400">L</span>
           </div>
@@ -156,7 +156,7 @@ export const RefuelsPage: React.FC<RefuelsPageProps> = ({
                   <div className="text-right shrink-0">
                     <div className="flex items-baseline gap-1 justify-end">
                       <span className="text-base sm:text-lg font-mono font-extrabold text-neutral-900 dark:text-white tabular-nums">
-                        {refuel.liters}
+                        {formatLiters(refuel.liters)}
                       </span>
                       <span className="text-[10px] font-mono text-neutral-400">Litre</span>
                     </div>

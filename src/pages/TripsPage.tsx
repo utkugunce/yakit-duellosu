@@ -3,7 +3,7 @@ import {
   Search, Plus, Calendar, Trash2, Edit2, Gauge, X
 } from 'lucide-react';
 import { Driver, DailyLog } from '../types';
-import { formatKm } from '../utils/duelAnalytics';
+import { formatKm, formatLiters } from '../utils/duelAnalytics';
 
 interface TripsPageProps {
   trips: DailyLog[];
@@ -212,13 +212,13 @@ export const TripsPage: React.FC<TripsPageProps> = ({
                   <div className="text-right shrink-0">
                     <div className="flex items-baseline gap-1 justify-end">
                       <span className="text-base sm:text-lg font-mono font-extrabold text-neutral-900 dark:text-white tabular-nums">
-                        {trip.avgConsumption}
+                        {formatLiters(trip.avgConsumption)}
                       </span>
                       <span className="text-[10px] font-mono text-neutral-400">L/100km</span>
                     </div>
 
                     <div className="text-[11px] font-mono text-neutral-400">
-                      {trip.fuelConsumed} L • <span className="text-neutral-700 dark:text-neutral-200 font-semibold">{trip.fuelCost.toLocaleString('tr-TR')} ₺</span>
+                      {formatLiters(trip.fuelConsumed)} L • <span className="text-neutral-700 dark:text-neutral-200 font-semibold">{trip.fuelCost.toLocaleString('tr-TR')} ₺</span>
                     </div>
                     {trip.fuelPrice && trip.fuelPrice > 0 && (
                       <div className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">

@@ -199,7 +199,7 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
                     required
                     value={liters}
                     onChange={e => handleLitersChange(e.target.value)}
-                    placeholder="35.5"
+                    placeholder="35.50"
                     className="w-full px-3.5 py-2.5 text-base font-bold font-mono rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white outline-none focus:border-neutral-900 dark:focus:border-white"
                   />
                   <span className="absolute right-3.5 top-3 text-xs font-mono text-neutral-400">L</span>

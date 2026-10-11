@@ -14,7 +14,7 @@ import {
   calculateDuel, calculateFunBadges,
   calculateExpenseShare, calculateWeekdayWeekendStats,
   calculatePotentialSavings,
-  DRIVER_CONFIG, formatKm, getEffectiveFuelPrice
+  DRIVER_CONFIG, formatKm, formatLiters, getEffectiveFuelPrice
 } from '../utils/duelAnalytics';
 
 interface DuelDashboardPageProps {
@@ -38,11 +38,11 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   const savings = calculatePotentialSavings(trips, effectiveFuelPrice);
 
   const totalCarKm = Math.round(trips.reduce((acc, t) => acc + t.distance, 0) * 10) / 10;
-  const totalCarFuel = Math.round(trips.reduce((acc, t) => acc + t.fuelConsumed, 0) * 10) / 10;
+  const totalCarFuel = Math.round(trips.reduce((acc, t) => acc + t.fuelConsumed, 0) * 100) / 100;
   const totalCarCost = Math.round(trips.reduce((acc, t) => acc + t.fuelCost, 0));
 
   // Refuel metrics from receipts
-  const totalFuelPurchasedLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 10) / 10;
+  const totalFuelPurchasedLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 100) / 100;
   const totalFuelPurchasedAmount = Math.round(refuels.reduce((acc, r) => acc + r.totalAmount, 0));
 
   // Chart data: chronological daily logs
@@ -67,8 +67,8 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
     {
       label: 'Ortalama Tüketim',
       unit: 'L/100km',
-      utkuVal: utkuAvg > 0 ? utkuAvg.toFixed(1) : '—',
-      gozdeVal: gozdeAvg > 0 ? gozdeAvg.toFixed(1) : '—',
+      utkuVal: utkuAvg > 0 ? utkuAvg.toFixed(2) : '—',
+      gozdeVal: gozdeAvg > 0 ? gozdeAvg.toFixed(2) : '—',
       utkuWins: utkuAvg > 0 && (gozdeAvg === 0 || utkuAvg < gozdeAvg),
       gozdeWins: gozdeAvg > 0 && (utkuAvg === 0 || gozdeAvg < utkuAvg),
     },
@@ -83,8 +83,8 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
     {
       label: 'Toplam Yakıt Tüketimi',
       unit: 'L',
-      utkuVal: `${duel.utkuStats.totalFuelConsumed.toFixed(1)} L`,
-      gozdeVal: `${duel.gozdeStats.totalFuelConsumed.toFixed(1)} L`,
+      utkuVal: `${formatLiters(duel.utkuStats.totalFuelConsumed)} L`,
+      gozdeVal: `${formatLiters(duel.gozdeStats.totalFuelConsumed)} L`,
       utkuWins: false,
       gozdeWins: false,
     },
@@ -107,8 +107,8 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
     {
       label: 'En Ekonomik Gün Rekoru',
       unit: 'L/100km',
-      utkuVal: duel.utkuStats.bestConsumption > 0 ? `${duel.utkuStats.bestConsumption.toFixed(1)} L` : '—',
-      gozdeVal: duel.gozdeStats.bestConsumption > 0 ? `${duel.gozdeStats.bestConsumption.toFixed(1)} L` : '—',
+      utkuVal: duel.utkuStats.bestConsumption > 0 ? `${formatLiters(duel.utkuStats.bestConsumption)} L` : '—',
+      gozdeVal: duel.gozdeStats.bestConsumption > 0 ? `${formatLiters(duel.gozdeStats.bestConsumption)} L` : '—',
       utkuWins: duel.utkuStats.bestConsumption > 0 && (duel.gozdeStats.bestConsumption === 0 || duel.utkuStats.bestConsumption < duel.gozdeStats.bestConsumption),
       gozdeWins: duel.gozdeStats.bestConsumption > 0 && (duel.utkuStats.bestConsumption === 0 || duel.gozdeStats.bestConsumption < duel.utkuStats.bestConsumption),
     },
@@ -159,7 +159,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl sm:text-3xl font-extrabold font-mono text-neutral-900 dark:text-white tabular-nums">
-                  {utkuAvg > 0 ? utkuAvg.toFixed(1) : '—'}
+                  {utkuAvg > 0 ? utkuAvg.toFixed(2) : '—'}
                 </span>
                 <span className="text-[11px] font-mono text-neutral-400">L/100km</span>
               </div>
@@ -191,7 +191,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl sm:text-3xl font-extrabold font-mono text-neutral-900 dark:text-white tabular-nums">
-                  {gozdeAvg > 0 ? gozdeAvg.toFixed(1) : '—'}
+                  {gozdeAvg > 0 ? gozdeAvg.toFixed(2) : '—'}
                 </span>
                 <span className="text-[11px] font-mono text-neutral-400">L/100km</span>
               </div>
@@ -213,7 +213,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                   </strong>{' '}
                   100 km'de ortalama{' '}
                   <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                    {duel.differenceLitersPer100Km} Litre
+                    {duel.differenceLitersPer100Km.toFixed(2)} Litre
                   </strong>{' '}
                   daha tasarruflu
                 </span>
@@ -233,7 +233,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
             <div className="mt-2.5 p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 text-[11px] flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
               <Sparkles className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
               <span>
-                💡 Araç hep daha tasarruflu sürücünün ortalamasıyla sürülsaydı, şu ana kadar <strong>~{savings.potentialLitersSaved} Litre</strong> (~<strong>{savings.potentialMoneySaved.toLocaleString('tr-TR')} ₺</strong>) daha az yakıt harcanırdı.
+                💡 Araç hep daha tasarruflu sürücünün ortalamasıyla sürülsaydı, şu ana kadar <strong>~{savings.potentialLitersSaved.toFixed(2)} Litre</strong> (~<strong>{savings.potentialMoneySaved.toLocaleString('tr-TR')} ₺</strong>) daha az yakıt harcanırdı.
               </span>
             </div>
           )}
@@ -260,7 +260,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
           </span>
           <div className="flex items-baseline gap-1">
             <span className="text-lg sm:text-xl font-bold font-mono text-neutral-900 dark:text-white tabular-nums">
-              {totalCarFuel}
+              {formatLiters(totalCarFuel)}
             </span>
             <span className="text-xs text-neutral-400 font-mono">L</span>
           </div>
@@ -284,7 +284,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
           </span>
           <div className="flex items-baseline gap-1">
             <span className="text-lg sm:text-xl font-bold font-mono text-neutral-900 dark:text-white tabular-nums">
-              {totalFuelPurchasedLiters}
+              {formatLiters(totalFuelPurchasedLiters)}
             </span>
             <span className="text-xs text-neutral-400 font-mono">L</span>
           </div>
@@ -555,7 +555,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
             <div>
               <span className="text-[11px] text-neutral-400 block">Ortalama Tüketim</span>
               <span className="text-xl font-bold font-mono text-neutral-900 dark:text-white">
-                {weekdayWeekend.weekdayAvgConsumption > 0 ? `${weekdayWeekend.weekdayAvgConsumption} L` : '—'}
+                {weekdayWeekend.weekdayAvgConsumption > 0 ? `${formatLiters(weekdayWeekend.weekdayAvgConsumption)} L` : '—'}
               </span>
             </div>
 
@@ -579,7 +579,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
             <div>
               <span className="text-[11px] text-neutral-400 block">Ortalama Tüketim</span>
               <span className="text-xl font-bold font-mono text-neutral-900 dark:text-white">
-                {weekdayWeekend.weekendAvgConsumption > 0 ? `${weekdayWeekend.weekendAvgConsumption} L` : '—'}
+                {weekdayWeekend.weekendAvgConsumption > 0 ? `${formatLiters(weekdayWeekend.weekendAvgConsumption)} L` : '—'}
               </span>
             </div>
 
@@ -698,7 +698,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
                   <div className="text-right shrink-0">
                     <span className="text-xs font-mono font-bold text-neutral-900 dark:text-white block tabular-nums">
-                      {trip.avgConsumption} L/100km
+                      {formatLiters(trip.avgConsumption)} L/100km
                     </span>
                     <span className="text-[11px] font-mono text-neutral-400">
                       {trip.fuelCost.toLocaleString('tr-TR')} ₺

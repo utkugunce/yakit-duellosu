@@ -30,6 +30,16 @@ export function formatKm(val?: number): string {
 }
 
 /**
+ * Format liter (Lt) values to always have exactly 2 decimal digits (e.g. 12.50 L, 45.00 Lt)
+ */
+export function formatLiters(val?: number | string): string {
+  if (val === undefined || val === null) return '0.00';
+  const num = typeof val === 'number' ? val : parseFloat(val);
+  if (isNaN(num)) return '0.00';
+  return (Math.round(num * 100) / 100).toFixed(2);
+}
+
+/**
  * Determine the active pump fuel price.
  * Uses the latest refuel receipt's pricePerLiter, or fallback to 84.80.
  */
@@ -157,10 +167,10 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   if (utkuStats.totalDays > 0 && gozdeStats.totalDays > 0) {
     if (utkuStats.avgConsumption < gozdeStats.avgConsumption) {
       championHolder = 'utku';
-      championDetail = `Ortalama ${utkuStats.avgConsumption} L/100km`;
+      championDetail = `Ortalama ${utkuStats.avgConsumption.toFixed(2)} L/100km`;
     } else {
       championHolder = 'gozde';
-      championDetail = `Ortalama ${gozdeStats.avgConsumption} L/100km`;
+      championDetail = `Ortalama ${gozdeStats.avgConsumption.toFixed(2)} L/100km`;
     }
   }
   badges.push({
@@ -185,7 +195,7 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
     title: 'Rekor Gün',
     type: 'record',
     holder: bestDayDriver,
-    detail: bestDayDriver !== 'none' ? `${lowestLiters} L/100km` : 'Henüz kayıt yok',
+    detail: bestDayDriver !== 'none' ? `${lowestLiters.toFixed(2)} L/100km` : 'Henüz kayıt yok',
   });
 
   // 3. Mesafe Lideri
@@ -346,8 +356,8 @@ export function calculateWeekdayWeekendStats(logs: DailyLog[]): WeekdayWeekendSt
     }
   }
 
-  const weekdayAvg = weekdayDist > 0 ? Math.round((weekdayFuel / weekdayDist) * 100 * 10) / 10 : 0;
-  const weekendAvg = weekendDist > 0 ? Math.round((weekendFuel / weekendDist) * 100 * 10) / 10 : 0;
+  const weekdayAvg = weekdayDist > 0 ? Math.round((weekdayFuel / weekdayDist) * 100 * 100) / 100 : 0;
+  const weekendAvg = weekendDist > 0 ? Math.round((weekendFuel / weekendDist) * 100 * 100) / 100 : 0;
 
   return {
     weekdayAvgConsumption: weekdayAvg,
@@ -385,7 +395,7 @@ export function calculatePotentialSavings(logs: DailyLog[], fuelPrice: number = 
   const savedMoney = savedLiters * fuelPrice;
 
   return {
-    potentialLitersSaved: Math.round(savedLiters * 10) / 10,
+    potentialLitersSaved: Math.round(savedLiters * 100) / 100,
     potentialMoneySaved: Math.round(savedMoney),
     moreEconomicalDriver,
   };

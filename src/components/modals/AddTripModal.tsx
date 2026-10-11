@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Fuel, ArrowRight } from 'lucide-react';
 import { Driver, DailyLog, CarSettings } from '../../types';
-import { formatKm } from '../../utils/duelAnalytics';
+import { formatKm, formatLiters } from '../../utils/duelAnalytics';
 
 interface AddTripModalProps {
   isOpen: boolean;
@@ -356,7 +356,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
             <div className="px-3 py-2 rounded-xl bg-neutral-900 text-white dark:bg-neutral-800 border border-neutral-800 flex items-center justify-between text-xs font-mono">
               <div className="flex items-center gap-1.5 text-neutral-300">
                 <Fuel className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>~{fuelConsumed.toFixed(1)} L</span>
+                <span>~{formatLiters(fuelConsumed)} L</span>
                 <span className="text-neutral-500">•</span>
                 <span className="text-neutral-400 text-[11px]">{activeFuelPrice.toFixed(2)} ₺/L</span>
               </div>
