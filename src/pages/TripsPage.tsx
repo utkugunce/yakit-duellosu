@@ -33,8 +33,20 @@ export const TripsPage: React.FC<TripsPageProps> = ({
       }
       return true;
     }).sort((a, b) => {
-      if (sortBy === 'date_desc') return new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (sortBy === 'date_asc') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === 'date_desc') {
+        const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (diff !== 0) return diff;
+        if ((b.startOdometer || 0) !== (a.startOdometer || 0)) return (b.startOdometer || 0) - (a.startOdometer || 0);
+        if ((b.endOdometer || 0) !== (a.endOdometer || 0)) return (b.endOdometer || 0) - (a.endOdometer || 0);
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      }
+      if (sortBy === 'date_asc') {
+        const diff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (diff !== 0) return diff;
+        if ((a.startOdometer || 0) !== (b.startOdometer || 0)) return (a.startOdometer || 0) - (b.startOdometer || 0);
+        if ((a.endOdometer || 0) !== (b.endOdometer || 0)) return (a.endOdometer || 0) - (b.endOdometer || 0);
+        return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      }
       if (sortBy === 'consumption_asc') return a.avgConsumption - b.avgConsumption;
       if (sortBy === 'consumption_desc') return b.avgConsumption - a.avgConsumption;
       if (sortBy === 'distance_desc') return b.distance - a.distance;

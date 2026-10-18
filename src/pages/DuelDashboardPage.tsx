@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, Tooltip, CartesianGrid
+  XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine
 } from 'recharts';
 import { DailyLog, FuelPurchaseRecord } from '../types';
 import {
@@ -45,18 +45,73 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   const totalFuelPurchasedLiters = Math.round(refuels.reduce((acc, r) => acc + r.liters, 0) * 100) / 100;
   const totalFuelPurchasedAmount = Math.round(refuels.reduce((acc, r) => acc + r.totalAmount, 0));
 
-  // Chart data: chronological daily logs
-  const sortedTrips = [...trips].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  const chartData = sortedTrips.slice(-12).map((t) => ({
-    name: new Date(t.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }),
-    driver: t.driver,
-    utkuConsumption: t.driver === 'utku' ? t.avgConsumption : null,
-    gozdeConsumption: t.driver === 'gozde' ? t.avgConsumption : null,
-    utkuDistance: t.driver === 'utku' ? t.distance : 0,
-    gozdeDistance: t.driver === 'gozde' ? t.distance : 0,
-    utkuSpeed: t.driver === 'utku' && t.avgSpeed ? t.avgSpeed : null,
-    gozdeSpeed: t.driver === 'gozde' && t.avgSpeed ? t.avgSpeed : null,
-  }));
+  // Chart data: chronological logs with same-day tie-breaker (startOdometer -> endOdometer -> createdAt)
+  const sortedTrips = [...trips].sort((a, b) => {
+    const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    if ((a.startOdometer || 0) !== (b.startOdometer || 0)) {
+      return (a.startOdometer || 0) - (b.startOdometer || 0);
+    }
+    if ((a.endOdometer || 0) !== (b.endOdometer || 0)) {
+      return (a.endOdometer || 0) - (b.endOdometer || 0);
+    }
+    return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+  });
+
+  const recentChartTrips = sortedTrips.slice(-12);
+  const dateCounts = recentChartTrips.reduce<Record<string, number>>((acc, t) => {
+    const dKey = t.date.slice(0, 10);
+    acc[dKey] = (acc[dKey] || 0) + 1;
+    return acc;
+  }, {});
+  const dateSeenIndex: Record<string, number> = {};
+
+  const chartData = recentChartTrips.map((t, idx) => {
+    const dKey = t.date.slice(0, 10);
+    dateSeenIndex[dKey] = (dateSeenIndex[dKey] || 0) + 1;
+    const shortDate = new Date(t.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+    const driverInitial = t.driver === 'utku' ? 'U' : 'G';
+    const xLabel = dateCounts[dKey] > 1
+      ? `${shortDate} #${dateSeenIndex[dKey]}`
+      : shortDate;
+
+    return {
+      xKey: `${t.id || idx}-${idx}`,
+      name: xLabel,
+      fullDate: new Date(t.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'short' }),
+      tripOrderOnDay: dateCounts[dKey] > 1 ? dateSeenIndex[dKey] : undefined,
+      driver: t.driver,
+      driverName: t.driver === 'utku' ? 'Utku' : 'Gözde',
+      driverInitial,
+      avgConsumption: t.avgConsumption,
+      distance: t.distance,
+      fuelConsumed: t.fuelConsumed,
+      fuelCost: t.fuelCost,
+      startOdometer: t.startOdometer,
+      endOdometer: t.endOdometer,
+      avgSpeed: t.avgSpeed,
+      utkuConsumption: t.driver === 'utku' ? Number(t.avgConsumption.toFixed(2)) : null,
+      gozdeConsumption: t.driver === 'gozde' ? Number(t.avgConsumption.toFixed(2)) : null,
+      utkuDistance: t.driver === 'utku' ? Number(t.distance.toFixed(1)) : null,
+      gozdeDistance: t.driver === 'gozde' ? Number(t.distance.toFixed(1)) : null,
+      utkuSpeed: t.driver === 'utku' && t.avgSpeed ? t.avgSpeed : null,
+      gozdeSpeed: t.driver === 'gozde' && t.avgSpeed ? t.avgSpeed : null,
+    };
+  });
+
+  const chartLabelMap = chartData.reduce<Record<string, string>>((acc, item) => {
+    acc[item.xKey] = item.name;
+    return acc;
+  }, {});
+
+  // Clean Y-axis domain for consumption chart
+  const consumptionValues = recentChartTrips.map(t => t.avgConsumption).filter(v => v > 0);
+  const minConsumptionDomain = consumptionValues.length > 0
+    ? Math.max(0, Math.floor((Math.min(...consumptionValues) - 0.8) * 2) / 2)
+    : 0;
+  const maxConsumptionDomain = consumptionValues.length > 0
+    ? Math.ceil((Math.max(...consumptionValues) + 0.8) * 2) / 2
+    : 10;
 
   const hasData = trips.length > 0;
   const utkuAvg = duel.utkuStats.avgConsumption;
@@ -427,10 +482,12 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
           <div>
             <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
               {chartMetric === 'consumption' && 'Tüketim Trendi (L/100km)'}
-              {chartMetric === 'distance' && 'Günlük Sürüş Mesafesi (km)'}
+              {chartMetric === 'distance' && 'Sürüş Mesafesi Seyri (km)'}
               {chartMetric === 'speed' && 'Ortalama Hız Seyri (km/h)'}
             </h3>
-            <span className="text-[11px] text-neutral-400">Son gün sonu telemetri verileri</span>
+            <span className="text-[11px] text-neutral-400">
+              Kronolojik son {chartData.length} sürüş kaydı {chartMetric === 'consumption' ? '(kesikli çizgiler genel ortalamayı gösterir)' : ''}
+            </span>
           </div>
 
           {/* Metric Selector Pills */}
@@ -444,7 +501,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                   : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200'
               }`}
             >
-              Tüketim (L)
+              Tüketim (L/100)
             </button>
             <button
               type="button"
@@ -472,77 +529,213 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
         </div>
 
         {/* Legend indicator */}
-        <div className="flex items-center gap-3 text-xs font-medium pt-1">
+        <div className="flex items-center flex-wrap gap-4 text-xs font-medium pt-1">
           <span className="flex items-center gap-1.5 text-sky-600 dark:text-sky-400">
-            <span className="w-2 h-2 rounded-full bg-sky-500" />
-            <span>Utku</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
+            <span>Utku {chartMetric === 'consumption' && utkuAvg > 0 ? `(Ort: ${formatLiters(utkuAvg)} L)` : ''}</span>
           </span>
           <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
-            <span className="w-2 h-2 rounded-full bg-rose-500" />
-            <span>Gözde</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+            <span>Gözde {chartMetric === 'consumption' && gozdeAvg > 0 ? `(Ort: ${formatLiters(gozdeAvg)} L)` : ''}</span>
           </span>
         </div>
 
         {/* Chart View */}
-        <div className="h-48 sm:h-56 w-full pt-2">
+        <div className="h-52 sm:h-60 w-full pt-2">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               {chartMetric === 'distance' ? (
-                <BarChart data={chartData} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.08} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
-                  <YAxis unit="km" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
+                <BarChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.12} vertical={false} />
+                  <XAxis
+                    dataKey="xKey"
+                    tickFormatter={(val) => chartLabelMap[val] || val}
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    width={44}
+                    tickFormatter={(v) => `${Number(v).toFixed(0)} km`}
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      borderColor: '#27272a',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      color: '#fff',
+                    cursor={{ fill: 'rgba(120, 120, 128, 0.08)' }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const d = payload[0].payload;
+                      const isUtku = d.driver === 'utku';
+                      return (
+                        <div className="rounded-xl bg-neutral-900/95 border border-neutral-800 px-3 py-2 text-[11px] text-white shadow-xl space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold">
+                            <span className={`w-2 h-2 rounded-full ${isUtku ? 'bg-sky-400' : 'bg-rose-400'}`} />
+                            <span>{d.driverName}</span>
+                            <span className="text-neutral-400">•</span>
+                            <span className="text-neutral-300">{d.fullDate}{d.tripOrderOnDay ? ` (${d.tripOrderOnDay}. Sürüş)` : ''}</span>
+                          </div>
+                          <div className="font-mono text-xs font-bold text-white">
+                            Mesafe: {formatKm(d.distance)} km
+                          </div>
+                          <div className="font-mono text-[10px] text-neutral-400">
+                            {formatKm(d.startOdometer)} ➔ {formatKm(d.endOdometer)} km • {formatLiters(d.avgConsumption)} L/100km
+                          </div>
+                        </div>
+                      );
                     }}
                   />
-                  <Bar dataKey="utkuDistance" fill="#0284c7" radius={[4, 4, 0, 0]} name="Utku (km)" />
-                  <Bar dataKey="gozdeDistance" fill="#e11d48" radius={[4, 4, 0, 0]} name="Gözde (km)" />
+                  <Bar dataKey="utkuDistance" stackId="distance" fill="#0284c7" radius={[6, 6, 0, 0]} maxBarSize={36} name="Utku (km)" />
+                  <Bar dataKey="gozdeDistance" stackId="distance" fill="#e11d48" radius={[6, 6, 0, 0]} maxBarSize={36} name="Gözde (km)" />
                 </BarChart>
               ) : chartMetric === 'speed' ? (
-                <LineChart data={chartData} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.08} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
-                  <YAxis unit="km/h" domain={['dataMin - 5', 'dataMax + 5']} tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
+                <LineChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.12} vertical={false} />
+                  <XAxis
+                    dataKey="xKey"
+                    tickFormatter={(val) => chartLabelMap[val] || val}
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    width={48}
+                    domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 5)), (dataMax: number) => Math.ceil(dataMax + 5)]}
+                    tickFormatter={(v) => `${Math.round(Number(v))} km/h`}
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      borderColor: '#27272a',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      color: '#fff',
+                    content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const d = payload[0].payload;
+                      const isUtku = d.driver === 'utku';
+                      return (
+                        <div className="rounded-xl bg-neutral-900/95 border border-neutral-800 px-3 py-2 text-[11px] text-white shadow-xl space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold">
+                            <span className={`w-2 h-2 rounded-full ${isUtku ? 'bg-sky-400' : 'bg-rose-400'}`} />
+                            <span>{d.driverName}</span>
+                            <span className="text-neutral-400">•</span>
+                            <span className="text-neutral-300">{d.fullDate}{d.tripOrderOnDay ? ` (${d.tripOrderOnDay}. Sürüş)` : ''}</span>
+                          </div>
+                          <div className="font-mono text-xs font-bold text-white">
+                            Ort. Hız: {d.avgSpeed ? `${d.avgSpeed} km/h` : 'Girilmedi'}
+                          </div>
+                          <div className="font-mono text-[10px] text-neutral-400">
+                            {formatKm(d.distance)} km • {formatLiters(d.avgConsumption)} L/100km
+                          </div>
+                        </div>
+                      );
                     }}
                   />
-                  <Line type="monotone" dataKey="utkuSpeed" stroke="#0284c7" strokeWidth={2} dot={{ r: 3, fill: '#0284c7' }} connectNulls name="Utku (km/h)" />
-                  <Line type="monotone" dataKey="gozdeSpeed" stroke="#e11d48" strokeWidth={2} dot={{ r: 3, fill: '#e11d48' }} connectNulls name="Gözde (km/h)" />
+                  <Line
+                    type="monotone"
+                    dataKey="utkuSpeed"
+                    stroke="#0284c7"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#0284c7', strokeWidth: 1.5, stroke: '#fff' }}
+                    activeDot={{ r: 6 }}
+                    connectNulls
+                    name="Utku (km/h)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="gozdeSpeed"
+                    stroke="#e11d48"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#e11d48', strokeWidth: 1.5, stroke: '#fff' }}
+                    activeDot={{ r: 6 }}
+                    connectNulls
+                    name="Gözde (km/h)"
+                  />
                 </LineChart>
               ) : (
-                <LineChart data={chartData} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.08} vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
-                  <YAxis unit="L" domain={['dataMin - 1', 'dataMax + 1']} tick={{ fontSize: 10, fill: '#888' }} tickLine={false} axisLine={false} />
+                <LineChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 4 }}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.12} vertical={false} />
+                  <XAxis
+                    dataKey="xKey"
+                    tickFormatter={(val) => chartLabelMap[val] || val}
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    width={46}
+                    domain={[minConsumptionDomain, maxConsumptionDomain]}
+                    tickFormatter={(v) => `${Number(v).toFixed(1)} L`}
+                    tick={{ fontSize: 10, fill: '#888' }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  {utkuAvg > 0 && (
+                    <ReferenceLine
+                      y={utkuAvg}
+                      stroke="#0284c7"
+                      strokeDasharray="4 4"
+                      strokeOpacity={0.45}
+                    />
+                  )}
+                  {gozdeAvg > 0 && (
+                    <ReferenceLine
+                      y={gozdeAvg}
+                      stroke="#e11d48"
+                      strokeDasharray="4 4"
+                      strokeOpacity={0.45}
+                    />
+                  )}
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      borderColor: '#27272a',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      color: '#fff',
+                    content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const d = payload[0].payload;
+                      const isUtku = d.driver === 'utku';
+                      return (
+                        <div className="rounded-xl bg-neutral-900/95 border border-neutral-800 px-3 py-2 text-[11px] text-white shadow-xl space-y-1">
+                          <div className="flex items-center gap-1.5 font-semibold">
+                            <span className={`w-2 h-2 rounded-full ${isUtku ? 'bg-sky-400' : 'bg-rose-400'}`} />
+                            <span>{d.driverName}</span>
+                            <span className="text-neutral-400">•</span>
+                            <span className="text-neutral-300">{d.fullDate}{d.tripOrderOnDay ? ` (${d.tripOrderOnDay}. Sürüş)` : ''}</span>
+                          </div>
+                          <div className="font-mono text-xs font-bold text-white">
+                            {formatLiters(d.avgConsumption)} L/100km
+                          </div>
+                          <div className="font-mono text-[10px] text-neutral-400">
+                            {formatKm(d.distance)} km • {formatLiters(d.fuelConsumed)} L ({d.fuelCost.toLocaleString('tr-TR')} ₺)
+                          </div>
+                        </div>
+                      );
                     }}
                   />
-                  <Line type="monotone" dataKey="utkuConsumption" stroke="#0284c7" strokeWidth={2} dot={{ r: 3, fill: '#0284c7' }} connectNulls name="Utku" />
-                  <Line type="monotone" dataKey="gozdeConsumption" stroke="#e11d48" strokeWidth={2} dot={{ r: 3, fill: '#e11d48' }} connectNulls name="Gözde" />
+                  <Line
+                    type="monotone"
+                    dataKey="utkuConsumption"
+                    stroke="#0284c7"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#0284c7', strokeWidth: 1.5, stroke: '#fff' }}
+                    activeDot={{ r: 6 }}
+                    connectNulls
+                    name="Utku"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="gozdeConsumption"
+                    stroke="#e11d48"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: '#e11d48', strokeWidth: 1.5, stroke: '#fff' }}
+                    activeDot={{ r: 6 }}
+                    connectNulls
+                    name="Gözde"
+                  />
                 </LineChart>
               )}
             </ResponsiveContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-xs text-neutral-400">
-              Grafik için en az 1 günlük sürüş kaydı girilmelidir
+              Grafik için en az 1 sürüş kaydı girilmelidir
             </div>
           )}
         </div>
