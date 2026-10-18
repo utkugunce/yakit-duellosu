@@ -51,7 +51,8 @@ export interface DriverStats {
   name: string;
   avatar: string;
   color: string;
-  totalDays: number; // Arabayı kullandığı gün sayısı
+  totalTrips: number; // Toplam yapılan sürüş sayısı
+  totalDays: number; // Arabayı kullandığı gün sayısı (benzersiz gün sayısı)
   totalDistance: number; // Toplam yapılan km
   totalFuelConsumed: number; // Toplam tüketilen litre
   totalFuelCost: number; // Toplam yakıt bedeli (TL)

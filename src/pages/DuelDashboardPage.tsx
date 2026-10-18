@@ -61,6 +61,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
   const hasData = trips.length > 0;
   const utkuAvg = duel.utkuStats.avgConsumption;
   const gozdeAvg = duel.gozdeStats.avgConsumption;
+  const totalUniqueDays = new Set(trips.map(t => t.date.slice(0, 10))).size;
 
   // Telemetry comparison matrix rows
   const telemetryMatrix = [
@@ -79,6 +80,22 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
       gozdeVal: duel.gozdeStats.avgCostPerKm > 0 ? `${duel.gozdeStats.avgCostPerKm.toFixed(2)} ₺` : '—',
       utkuWins: duel.utkuStats.avgCostPerKm > 0 && (duel.gozdeStats.avgCostPerKm === 0 || duel.utkuStats.avgCostPerKm < duel.gozdeStats.avgCostPerKm),
       gozdeWins: duel.gozdeStats.avgCostPerKm > 0 && (duel.utkuStats.avgCostPerKm === 0 || duel.gozdeStats.avgCostPerKm < duel.utkuStats.avgCostPerKm),
+    },
+    {
+      label: 'Toplam Sürüş Sayısı',
+      unit: 'sürüş',
+      utkuVal: `${duel.utkuStats.totalTrips} sürüş`,
+      gozdeVal: `${duel.gozdeStats.totalTrips} sürüş`,
+      utkuWins: duel.utkuStats.totalTrips > duel.gozdeStats.totalTrips,
+      gozdeWins: duel.gozdeStats.totalTrips > duel.utkuStats.totalTrips,
+    },
+    {
+      label: 'Aktif Kullanılan Gün',
+      unit: 'gün',
+      utkuVal: `${duel.utkuStats.totalDays} gün`,
+      gozdeVal: `${duel.gozdeStats.totalDays} gün`,
+      utkuWins: duel.utkuStats.totalDays > duel.gozdeStats.totalDays,
+      gozdeWins: duel.gozdeStats.totalDays > duel.utkuStats.totalDays,
     },
     {
       label: 'Toplam Yakıt Tüketimi',
@@ -105,7 +122,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
       gozdeWins: (duel.gozdeStats.avgSpeed || 0) > (duel.utkuStats.avgSpeed || 0),
     },
     {
-      label: 'En Ekonomik Gün Rekoru',
+      label: 'En Ekonomik Sürüş Rekoru',
       unit: 'L/100km',
       utkuVal: duel.utkuStats.bestConsumption > 0 ? `${formatLiters(duel.utkuStats.bestConsumption)} L` : '—',
       gozdeVal: duel.gozdeStats.bestConsumption > 0 ? `${formatLiters(duel.gozdeStats.bestConsumption)} L` : '—',
@@ -130,7 +147,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
           </div>
 
           <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-medium">
-            {trips.length} Günlük Kayıt
+            {trips.length} Sürüş {totalUniqueDays > 0 ? `(${totalUniqueDays} Gün)` : ''}
           </span>
         </div>
 
@@ -165,7 +182,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
               </div>
 
               <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1 truncate">
-                {duel.utkuStats.totalDays} gün • {formatKm(duel.utkuStats.totalDistance)} km{duel.utkuStats.avgSpeed ? ` • ${duel.utkuStats.avgSpeed} km/h` : ''}
+                {duel.utkuStats.totalTrips} sürüş • {formatKm(duel.utkuStats.totalDistance)} km{duel.utkuStats.avgSpeed ? ` • ${duel.utkuStats.avgSpeed} km/h` : ''}
               </div>
             </div>
 
@@ -197,7 +214,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
               </div>
 
               <div className="text-[11px] text-neutral-400 dark:text-neutral-500 mt-1 truncate">
-                {duel.gozdeStats.totalDays} gün • {formatKm(duel.gozdeStats.totalDistance)} km{duel.gozdeStats.avgSpeed ? ` • ${duel.gozdeStats.avgSpeed} km/h` : ''}
+                {duel.gozdeStats.totalTrips} sürüş • {formatKm(duel.gozdeStats.totalDistance)} km{duel.gozdeStats.avgSpeed ? ` • ${duel.gozdeStats.avgSpeed} km/h` : ''}
               </div>
             </div>
           </div>
@@ -548,7 +565,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                 🏢 Hafta İçi
               </span>
               <span className="text-[10px] font-mono text-neutral-400">
-                {weekdayWeekend.weekdayCount} gün
+                {weekdayWeekend.weekdayCount} sürüş
               </span>
             </div>
 
@@ -572,7 +589,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
                 🌳 Hafta Sonu
               </span>
               <span className="text-[10px] font-mono text-neutral-400">
-                {weekdayWeekend.weekendCount} gün
+                {weekdayWeekend.weekendCount} sürüş
               </span>
             </div>
 
@@ -649,7 +666,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
       <div className="bg-white dark:bg-[#121215] rounded-2xl sm:rounded-3xl border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
-            Son Günlük Kayıtlar
+            Son Sürüş Kayıtları
           </h3>
           <button
             type="button"
@@ -663,7 +680,7 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
         {sortedTrips.length === 0 ? (
           <div className="py-8 text-center text-xs text-neutral-400">
-            Henüz gün sonu sürüşü girilmedi. Alttaki "+" butonuna dokunarak günün kaydını ekleyin.
+            Henüz sürüş girilmedi. Alttaki "+" butonuna dokunarak sürüş kaydını ekleyin.
           </div>
         ) : (
           <div className="divide-y divide-neutral-100 dark:divide-neutral-800/80">

@@ -61,7 +61,8 @@ export function calculateDriverStats(
   logs: DailyLog[]
 ): DriverStats {
   const driverLogs = logs.filter(t => t.driver === driver);
-  const totalDays = driverLogs.length;
+  const totalTrips = driverLogs.length;
+  const totalDays = new Set(driverLogs.map(l => l.date.slice(0, 10))).size;
 
   let totalDistance = 0;
   let totalFuelConsumed = 0;
@@ -94,6 +95,7 @@ export function calculateDriverStats(
     name: DRIVER_CONFIG[driver].name,
     avatar: DRIVER_CONFIG[driver].avatar,
     color: DRIVER_CONFIG[driver].color,
+    totalTrips,
     totalDays,
     totalDistance: Math.round(totalDistance * 10) / 10,
     totalFuelConsumed: Math.round(totalFuelConsumed * 100) / 100,
@@ -114,7 +116,7 @@ export function calculateDuel(logs: DailyLog[]): DuelComparison {
   let differenceLitersPer100Km = 0;
   let percentageDifference = 0;
 
-  if (utkuStats.totalDays > 0 && gozdeStats.totalDays > 0) {
+  if (utkuStats.totalTrips > 0 && gozdeStats.totalTrips > 0) {
     const diff = utkuStats.avgConsumption - gozdeStats.avgConsumption;
     differenceLitersPer100Km = Math.round(Math.abs(diff) * 100) / 100;
 
@@ -130,9 +132,9 @@ export function calculateDuel(logs: DailyLog[]): DuelComparison {
     } else {
       winner = 'gozde';
     }
-  } else if (utkuStats.totalDays > 0) {
+  } else if (utkuStats.totalTrips > 0) {
     winner = 'utku';
-  } else if (gozdeStats.totalDays > 0) {
+  } else if (gozdeStats.totalTrips > 0) {
     winner = 'gozde';
   }
 
@@ -164,7 +166,7 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   // 1. Tasarruf Lideri
   let championHolder: Driver | 'none' = 'none';
   let championDetail = 'Henüz yeterli veri yok';
-  if (utkuStats.totalDays > 0 && gozdeStats.totalDays > 0) {
+  if (utkuStats.totalTrips > 0 && gozdeStats.totalTrips > 0) {
     if (utkuStats.avgConsumption < gozdeStats.avgConsumption) {
       championHolder = 'utku';
       championDetail = `Ortalama ${utkuStats.avgConsumption.toFixed(2)} L/100km`;
@@ -192,7 +194,7 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
   }
   badges.push({
     id: 'record-trip',
-    title: 'Rekor Gün',
+    title: 'Rekor Sürüş',
     type: 'record',
     holder: bestDayDriver,
     detail: bestDayDriver !== 'none' ? `${lowestLiters.toFixed(2)} L/100km` : 'Henüz kayıt yok',
@@ -245,23 +247,23 @@ export function calculateFunBadges(logs: DailyLog[]): FunBadge[] {
     detail: speedDetail,
   });
 
-  // 5. Direksiyon Başı Gün Sayısı
-  let daysHolder: Driver | 'none' = 'none';
-  if (utkuStats.totalDays > gozdeStats.totalDays) {
-    daysHolder = 'utku';
-  } else if (gozdeStats.totalDays > utkuStats.totalDays) {
-    daysHolder = 'gozde';
+  // 5. En Çok Kullanan
+  let tripsHolder: Driver | 'none' = 'none';
+  if (utkuStats.totalTrips > gozdeStats.totalTrips) {
+    tripsHolder = 'utku';
+  } else if (gozdeStats.totalTrips > utkuStats.totalTrips) {
+    tripsHolder = 'gozde';
   }
   badges.push({
     id: 'days-master',
     title: 'En Çok Kullanan',
     type: 'days',
-    holder: daysHolder,
-    detail: daysHolder === 'utku'
-      ? `${utkuStats.totalDays} gün`
-      : daysHolder === 'gozde'
-        ? `${gozdeStats.totalDays} gün`
-        : 'Eşit',
+    holder: tripsHolder,
+    detail: tripsHolder === 'utku'
+      ? `${utkuStats.totalTrips} sürüş (${utkuStats.totalDays} gün)`
+      : tripsHolder === 'gozde'
+        ? `${gozdeStats.totalTrips} sürüş (${gozdeStats.totalDays} gün)`
+        : 'Eşit kullanım',
   });
 
   return badges;
@@ -379,7 +381,7 @@ export function calculatePotentialSavings(logs: DailyLog[], fuelPrice: number = 
   const utkuStats = calculateDriverStats('utku', logs);
   const gozdeStats = calculateDriverStats('gozde', logs);
 
-  if (utkuStats.totalDays === 0 || gozdeStats.totalDays === 0) {
+  if (utkuStats.totalTrips === 0 || gozdeStats.totalTrips === 0) {
     return { potentialLitersSaved: 0, potentialMoneySaved: 0, moreEconomicalDriver: 'tie' };
   }
 
