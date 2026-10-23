@@ -192,14 +192,9 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
       <div className="bg-white dark:bg-[#121215] rounded-2xl sm:rounded-3xl border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-6 shadow-xs">
         {/* Top Header */}
         <div className="flex items-center justify-between pb-4 border-b border-neutral-100 dark:border-neutral-800/80">
-          <div>
-            <span className="text-[11px] font-mono uppercase tracking-wider text-neutral-400 dark:text-neutral-500 font-semibold block">
-              ORTALAMA TÜKETİM DÜELLOSU
-            </span>
-            <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
-              Utku vs Gözde
-            </h2>
-          </div>
+          <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+            Utku vs Gözde
+          </h2>
 
           <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-medium">
             {trips.length} Sürüş {totalUniqueDays > 0 ? `(${totalUniqueDays} Gün)` : ''}
@@ -366,12 +361,9 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
       {/* 3. Benzin Masrafı & Mesafe Payı Çubuğu (Expense & Usage Share) */}
       <div className="bg-white dark:bg-[#121215] rounded-2xl sm:rounded-3xl border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3.5">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
-              Yakıt Masraf & Mesafe Payı
-            </h3>
-            <span className="text-[11px] text-neutral-400">Aracı kim ne kadar kullandı ve masraf kime ait?</span>
-          </div>
+          <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+            Yakıt Masraf & Mesafe Payı
+          </h3>
           <span className="text-[11px] font-mono font-medium text-neutral-500 dark:text-neutral-400">
             Toplam: {expenseShare.totalCost.toLocaleString('tr-TR')} ₺
           </span>
@@ -479,16 +471,11 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
       {/* 5. Çok Modlu İnteraktif Grafik (Trend & Telemetry Chart) */}
       <div className="bg-white dark:bg-[#121215] rounded-2xl sm:rounded-3xl border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
-              {chartMetric === 'consumption' && 'Tüketim Trendi (L/100km)'}
-              {chartMetric === 'distance' && 'Sürüş Mesafesi Seyri (km)'}
-              {chartMetric === 'speed' && 'Ortalama Hız Seyri (km/h)'}
-            </h3>
-            <span className="text-[11px] text-neutral-400">
-              Kronolojik son {chartData.length} sürüş kaydı {chartMetric === 'consumption' ? '(kesikli çizgiler genel ortalamayı gösterir)' : ''}
-            </span>
-          </div>
+          <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+            {chartMetric === 'consumption' && 'Tüketim Trendi (L/100km)'}
+            {chartMetric === 'distance' && 'Sürüş Mesafesi Seyri (km)'}
+            {chartMetric === 'speed' && 'Ortalama Hız Seyri (km/h)'}
+          </h3>
 
           {/* Metric Selector Pills */}
           <div className="flex items-center p-0.5 rounded-xl bg-neutral-100 dark:bg-neutral-800/80 text-[11px] font-medium self-start sm:self-auto">
@@ -743,12 +730,9 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
       {/* 6. Hafta İçi vs Hafta Sonu Sürüş Analizi */}
       <div className="bg-white dark:bg-[#121215] rounded-2xl sm:rounded-3xl border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
-        <div>
-          <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
-            Hafta İçi vs Hafta Sonu Analizi
-          </h3>
-          <span className="text-[11px] text-neutral-400">Şehir içi / iş trafiği vs hafta sonu kaçışları</span>
-        </div>
+        <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+          Hafta İçi vs Hafta Sonu Analizi
+        </h3>
 
         <div className="grid grid-cols-2 gap-3">
           {/* Weekday */}
@@ -803,14 +787,11 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
       {/* 7. Düello Rozetleri & Başarımlar (Fun Badges) */}
       <div className="bg-white dark:bg-[#121215] rounded-2xl sm:rounded-3xl border border-neutral-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-amber-500" />
-            <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
-              Düello Başarımları
-            </h3>
-          </div>
-          <span className="text-[11px] text-neutral-400">Kim hangi unvanı elinde tutuyor?</span>
+        <div className="flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-amber-500" />
+          <h3 className="text-xs sm:text-sm font-bold text-neutral-900 dark:text-white">
+            Düello Başarımları
+          </h3>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -844,10 +825,6 @@ export const DuelDashboardPage: React.FC<DuelDashboardPageProps> = ({
 
                 <div className="text-[11px] font-mono font-medium text-neutral-600 dark:text-neutral-400">
                   {badge.detail}
-                </div>
-
-                <div className="text-[10px] text-neutral-400">
-                  {isUtku ? '👑 Utku önde' : isGozde ? '👑 Gözde önde' : 'Henüz lider yok'}
                 </div>
               </div>
             );

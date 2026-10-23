@@ -146,14 +146,9 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
 
         {/* Compact Header */}
         <div className="px-4 py-2.5 border-b border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
-              {editingTrip ? 'Günlük Kaydı Düzenle' : 'Gün Sonu Kaydı'}
-            </h2>
-            <p className="text-[11px] text-neutral-400">
-              Bugünkü kilometre ve yol bilgisayarı değerleri
-            </p>
-          </div>
+          <h2 className="text-sm font-bold text-neutral-900 dark:text-white">
+            {editingTrip ? 'Sürüşü Düzenle' : 'Yeni Sürüş'}
+          </h2>
           <button
             type="button"
             onClick={onClose}

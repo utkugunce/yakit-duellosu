@@ -77,7 +77,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm hover:opacity-90 active:scale-98 transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Gün Kaydet</span>
+              <span>Sürüş Kaydet</span>
             </button>
           </div>
         </div>
@@ -94,23 +94,19 @@ export const Navigation: React.FC<NavigationProps> = ({
       {/* Mobile Quick Action Popup Menu */}
       {isActionMenuOpen && (
         <div className="md:hidden fixed bottom-24 inset-x-4 z-50 p-3 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-2xl animate-sheet-up space-y-2">
-          <div className="text-[11px] font-semibold text-neutral-400 dark:text-neutral-500 px-2 py-0.5 uppercase tracking-wider">
-            Yeni Kayıt Ekle
-          </div>
           <button
             type="button"
             onClick={() => {
               setIsActionMenuOpen(false);
               onOpenTripModal();
             }}
-            className="w-full flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/80 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left transition-colors"
+            className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/80 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left transition-colors"
           >
-            <div className="w-9 h-9 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center shrink-0">
               <CalendarDays className="w-4 h-4" />
             </div>
-            <div>
-              <div className="text-xs font-bold text-neutral-900 dark:text-white">Gün Kaydet</div>
-              <div className="text-[11px] text-neutral-500 dark:text-neutral-400">Gün sonu kilometre ve ortalama tüketim</div>
+            <div className="text-xs font-bold text-neutral-900 dark:text-white">
+              Sürüş Kaydet
             </div>
           </button>
 
@@ -121,14 +117,13 @@ export const Navigation: React.FC<NavigationProps> = ({
                 setIsActionMenuOpen(false);
                 onOpenFuelModal();
               }}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/80 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left transition-colors"
+              className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-800/80 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left transition-colors"
             >
-              <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
                 <Receipt className="w-4 h-4" />
               </div>
-              <div>
-                <div className="text-xs font-bold text-neutral-900 dark:text-white">Benzin Fişi Kaydet</div>
-                <div className="text-[11px] text-neutral-500 dark:text-neutral-400">İstasyondan alınan litre ve tutar</div>
+              <div className="text-xs font-bold text-neutral-900 dark:text-white">
+                Benzin Fişi Kaydet
               </div>
             </button>
           )}

@@ -146,14 +146,9 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
 
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-neutral-200/80 dark:border-neutral-800/80 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-neutral-900 dark:text-white">
-              {editingRefuel ? 'Fiş Kaydını Düzenle' : 'Benzin Fişi Kaydet'}
-            </h2>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500">
-              Fişte yazan litre ve tutarı girin
-            </p>
-          </div>
+          <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+            {editingRefuel ? 'Fişi Düzenle' : 'Benzin Fişi Ekle'}
+          </h2>
           <button
             type="button"
             onClick={onClose}

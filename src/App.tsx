@@ -160,10 +160,10 @@ function AppContent() {
     let nextTrips: TripRecord[];
     if (editingTrip) {
       nextTrips = trips.map(t => (t.id === trip.id ? trip : t));
-      showToast('Günün kaydı güncellendi!', 'success');
+      showToast('Sürüş kaydı güncellendi!', 'success');
     } else {
       nextTrips = [trip, ...trips];
-      showToast(`Günün kaydı eklendi (${formatKm(trip.distance)} km, ${trip.avgConsumption} L/100km)`, 'success');
+      showToast(`Sürüş kaydedildi (${formatKm(trip.distance)} km, ${trip.avgConsumption} L/100km)`, 'success');
     }
     updateTrips(nextTrips);
     setEditingTrip(null);
@@ -178,7 +178,7 @@ function AppContent() {
   const handleDeleteTrip = (tripId: string) => {
     const nextTrips = trips.filter(t => t.id !== tripId);
     updateTrips(nextTrips);
-    showToast('Gün kaydı silindi.', 'info');
+    showToast('Sürüş kaydı silindi.', 'info');
 
     const { url, key } = getSupabaseConfig(settings);
     if (url && key) {

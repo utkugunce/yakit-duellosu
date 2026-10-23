@@ -28,14 +28,9 @@ export const RefuelsPage: React.FC<RefuelsPageProps> = ({
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
-            Benzin Fişleri
-          </h2>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500">
-            İstasyondan alınan yakıtlar ve pompa fiyatları
-          </p>
-        </div>
+        <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+          Benzin Fişleri
+        </h2>
 
         <button
           type="button"

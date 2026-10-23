@@ -61,14 +61,9 @@ export const TripsPage: React.FC<TripsPageProps> = ({
     <div className="space-y-4 animate-fade-in">
       {/* Title & Quick Action */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
-            Günlük Kayıtlar
-          </h2>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500">
-            Gün sonu araç kullanım ve tüketim geçmişi
-          </p>
-        </div>
+        <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+          Sürüş Kayıtları
+        </h2>
 
         <button
           type="button"
@@ -76,7 +71,7 @@ export const TripsPage: React.FC<TripsPageProps> = ({
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm hover:opacity-90 active:scale-95 transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>Gün Kaydet</span>
+          <span>Sürüş Kaydet</span>
         </button>
       </div>
 
@@ -159,9 +154,9 @@ export const TripsPage: React.FC<TripsPageProps> = ({
 
       {/* Trips Feed */}
       {filteredTrips.length === 0 ? (
-        <div className="p-8 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 text-center space-y-2">
+        <div className="p-8 rounded-2xl bg-white dark:bg-[#121215] border border-neutral-200/80 dark:border-neutral-800 text-center space-y-3">
           <p className="text-xs text-neutral-400 dark:text-neutral-500">
-            Kriterlere uygun gün kaydı bulunamadı.
+            Kayıt bulunamadı.
           </p>
           <button
             type="button"
@@ -169,7 +164,7 @@ export const TripsPage: React.FC<TripsPageProps> = ({
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 rounded-xl"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>İlk Günü Kaydet</span>
+            <span>İlk Sürüşü Kaydet</span>
           </button>
         </div>
       ) : (

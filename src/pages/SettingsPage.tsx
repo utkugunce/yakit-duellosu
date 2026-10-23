@@ -125,14 +125,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
 
   return (
     <div className="space-y-4 animate-fade-in pb-12">
-      <div>
-        <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
-          Ayarlar & Veri
-        </h2>
-        <p className="text-xs text-neutral-400 dark:text-neutral-500">
-          Bulut senkronizasyonu ve veri yönetimi
-        </p>
-      </div>
+      <h2 className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+        Ayarlar & Veri
+      </h2>
 
       {/* Cloud Sync Status / Configuration */}
       {hasCloudSync ? (
@@ -149,10 +144,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
               Aktif & Canlı
             </span>
           </div>
-
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Utku ve Gözde'nin kayıtları Supabase bulutunda ortak olarak anlık eşitlenmektedir.
-          </p>
 
           <div className="flex items-center gap-2 pt-1">
             <button
@@ -184,10 +175,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE yakit_duellosu;`;
               Bulut Senkronizasyonu (Supabase)
             </h3>
           </div>
-
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Ortak araç havuzunu anlık senkronize etmek için Supabase bilgilerinizi girin.
-          </p>
 
           <div className="space-y-2.5">
             <div>
