@@ -15,6 +15,7 @@ import {
 import { Header } from './components/common/Header';
 import { Navigation, ActiveTab } from './components/common/Navigation';
 import { ToastProvider, useToast } from './components/common/Toast';
+import { AuthGate } from './components/common/AuthGate';
 import { AddTripModal } from './components/modals/AddTripModal';
 import { AddFuelModal } from './components/modals/AddFuelModal';
 
@@ -401,7 +402,9 @@ function AppContent() {
 export default function App() {
   return (
     <ToastProvider>
-      <AppContent />
+      <AuthGate>
+        <AppContent />
+      </AuthGate>
     </ToastProvider>
   );
 }
